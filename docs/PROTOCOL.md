@@ -1,4 +1,4 @@
-# Protocolo Minemories 5
+# Protocolo Minemories 6
 
 Canal de plugin message: `minemories:control`.
 
@@ -8,7 +8,7 @@ seguido de UTF-8, con un máximo de 16 KiB. Ningún plugin message supera 32 KiB
 ## Solicitud de ticket (cliente → Paper)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 1
 i64 requestId
 ```
@@ -16,7 +16,7 @@ i64 requestId
 Forma extendida para una cámara física:
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 1
 i64 requestId
 string captureToken
@@ -28,7 +28,7 @@ La forma corta se conserva para capturas sin cámara física.
 ## Respuesta de autorización (Paper → cliente)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 2
 i64 requestId
 bool accepted
@@ -51,7 +51,7 @@ si accepted:
 ## Inicio de transferencia (cliente → Paper)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 3
 i64 requestId
 string token
@@ -67,13 +67,13 @@ i32 muralBytes
 El ticket se consume en este punto. Paper comprueba jugador, permiso, bloqueo,
 cooldown, tamaño y concurrencia antes de reservar `totalBytes`. Para una cámara
 física, Fabric incluye exactamente 16 384 índices de la paleta de mapas y declara
-65 536 bytes para la fuente 256×256 ampliable. En los demás flujos ambos valores
+262 144 bytes para la fuente mural 512×512 sin marco. En los demás flujos ambos valores
 son cero. Paper valida el tamaño y cada índice antes de crear los mapas.
 
 ## Fragmento JPEG (cliente → Paper)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 4
 i64 requestId
 i32 chunkIndex
@@ -88,7 +88,7 @@ paleta. La suma debe coincidir exactamente con ambos tamaños declarados.
 ## Resultado (Paper → cliente)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 5
 i64 requestId
 bool success
@@ -98,7 +98,7 @@ string message
 ## Activación de cámara (Paper → cliente)
 
 ```text
-u8 protocolVersion = 5
+u8 protocolVersion = 6
 u8 opcode = 6
 string captureToken
 i32 remainingDurability

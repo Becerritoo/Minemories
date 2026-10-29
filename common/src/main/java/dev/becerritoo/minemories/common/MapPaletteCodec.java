@@ -4,7 +4,7 @@ package dev.becerritoo.minemories.common;
 public final class MapPaletteCodec {
     public static final int MAP_SIZE = 128;
     public static final int PIXEL_COUNT = MAP_SIZE * MAP_SIZE;
-    public static final int MURAL_SIZE = MAP_SIZE * 2;
+    public static final int MURAL_SIZE = MAP_SIZE * 4;
     public static final int MURAL_PIXEL_COUNT = MURAL_SIZE * MURAL_SIZE;
     public static final int PHOTO_X = 2;
     public static final int PHOTO_Y = 2;
@@ -100,6 +100,58 @@ public final class MapPaletteCodec {
 
     public static boolean validMural(byte[] pixels) {
         return valid(pixels, MURAL_PIXEL_COUNT);
+    }
+
+    public static boolean validRender(byte[] pixels, int gridSize) {
+        if (gridSize < 2 || gridSize > 4) {
+            return false;
+        }
+        int size = MAP_SIZE * gridSize;
+        return valid(pixels, size * size);
+    }
+
+    /** Reescala una imagen ya cuantizada conservando la paleta vanilla. */
+    public static byte[] resize(byte[] source, int sourceSize, int targetSize) {
+        if (source == null || sourceSize < 1 || targetSize < 1
+                || source.length != sourceSize * sourceSize) {
+            throw new IllegalArgumentException("Las dimensiones de la fotografía no son válidas");
+        }
+        if (sourceSize == targetSize) {
+            return source.clone();
+        }
+        byte[] result = new byte[targetSize * targetSize];
+        double scale = sourceSize / (double) targetSize;
+        for (int y = 0; y < targetSize; y++) {
+            double sourceY = (y + 0.5) * scale - 0.5;
+            int y0 = Math.max(0, Math.min(sourceSize - 1, (int) Math.floor(sourceY)));
+            int y1 = Math.min(sourceSize - 1, y0 + 1);
+            double fractionY = Math.max(0.0, sourceY - y0);
+            for (int x = 0; x < targetSize; x++) {
+                double sourceX = (x + 0.5) * scale - 0.5;
+                int x0 = Math.max(0, Math.min(sourceSize - 1, (int) Math.floor(sourceX)));
+                int x1 = Math.min(sourceSize - 1, x0 + 1);
+                double fractionX = Math.max(0.0, sourceX - x0);
+                int topLeft = rgb(source[y0 * sourceSize + x0]);
+                int topRight = rgb(source[y0 * sourceSize + x1]);
+                int bottomLeft = rgb(source[y1 * sourceSize + x0]);
+                int bottomRight = rgb(source[y1 * sourceSize + x1]);
+                int red = interpolate(topLeft >>> 16, topRight >>> 16,
+                        bottomLeft >>> 16, bottomRight >>> 16, fractionX, fractionY);
+                int green = interpolate(topLeft >>> 8, topRight >>> 8,
+                        bottomLeft >>> 8, bottomRight >>> 8, fractionX, fractionY);
+                int blue = interpolate(topLeft, topRight, bottomLeft, bottomRight,
+                        fractionX, fractionY);
+                result[y * targetSize + x] = (byte) nearest(red & 0xff, green & 0xff, blue & 0xff);
+            }
+        }
+        return result;
+    }
+
+    private static int interpolate(int topLeft, int topRight, int bottomLeft, int bottomRight,
+                                   double fractionX, double fractionY) {
+        double top = (topLeft & 0xff) + ((topRight & 0xff) - (topLeft & 0xff)) * fractionX;
+        double bottom = (bottomLeft & 0xff) + ((bottomRight & 0xff) - (bottomLeft & 0xff)) * fractionX;
+        return clamp((int) Math.round(top + (bottom - top) * fractionY));
     }
 
     private static boolean valid(byte[] pixels, int expectedLength) {

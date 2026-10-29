@@ -2,6 +2,19 @@
 
 Este proyecto sigue [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-10-29
+
+- Protocolo 6 coordinado entre Fabric y Paper.
+- El pie de foto se convierte en el nombre de la Instax impresa, con limpieza y límite seguro.
+- Fuente mural 512×512 sin marco Instax generada y cuantizada por Fabric.
+- Variantes temporales 256×256, 384×384 y 512×512 preparadas fuera del hilo principal.
+- Ampliaciones 2×2, 3×3 y 4×4 con exactamente 4, 9 o 16 papeles.
+- Murales continuos sin el borde decorativo de la Instax original.
+- Piezas numeradas por fila y columna que heredan el título de la fotografía.
+- Duplicación registrada de Instax 1×1 con un mapa vacío; cada copia conserva su propio derecho de ampliación.
+- Fuente compartida mientras exista una Instax original y eliminación automática al consumirse la última.
+- Las copias exactas obtenidas por exploits comparten el mismo registro y no crean derechos adicionales.
+
 ## [1.0.0] - 2026-10-29
 
 - Primera implementación Fabric y Paper para Minecraft 1.21.11.
@@ -40,4 +53,5 @@ Este proyecto sigue [Semantic Versioning](https://semver.org/).
 - Rollos de 12 exposiciones fabricados con cuatro mapas vacíos.
 - Selección de canal por ID al publicar mediante el bot de DiscordSRV.
 
+[2.0.0]: https://github.com/Becerritoo/Minemories/releases/tag/v2.0.0
 [1.0.0]: https://github.com/Becerritoo/Minemories/releases/tag/v1.0.0

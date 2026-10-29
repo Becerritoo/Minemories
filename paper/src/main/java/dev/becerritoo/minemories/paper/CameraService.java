@@ -72,6 +72,7 @@ final class CameraService implements Listener, AutoCloseable {
     private final NamespacedKey signatureKey;
     private final NamespacedKey repairTargetKey;
     private final NamespacedKey enlargementPreviewKey;
+    private final NamespacedKey copyPreviewKey;
     private final SecureRandom random = new SecureRandom();
     private final Map<String, CaptureSession> captures = new ConcurrentHashMap<>();
     private final Map<UUID, String> captureByPlayer = new ConcurrentHashMap<>();
@@ -95,6 +96,7 @@ final class CameraService implements Listener, AutoCloseable {
         this.signatureKey = key("signature");
         this.repairTargetKey = key("repair_target");
         this.enlargementPreviewKey = key("enlargement_preview");
+        this.copyPreviewKey = key("copy_preview");
         registerRecipes();
         restorePrints();
         Bukkit.getOnlinePlayers().forEach(player -> {
@@ -277,7 +279,21 @@ final class CameraService implements Listener, AutoCloseable {
         ItemStack photograph = cartography.getItem(0);
         ItemStack material = cartography.getItem(1);
         Optional<CameraStore.PrintRecord> print = print(photograph);
-        if (print.isEmpty() || material == null || material.getType() != Material.PAPER) {
+        if (print.isEmpty() || material == null) {
+            return;
+        }
+        if (material.getType() == Material.MAP && print.get().gridSize() == 1) {
+            ItemStack preview = photograph.clone();
+            preview.setAmount(1);
+            ItemMeta meta = preview.getItemMeta();
+            meta.setLore(List.of("§7Copia Instax independiente",
+                    "§8También podrá ampliarse"));
+            meta.getPersistentDataContainer().set(copyPreviewKey, PersistentDataType.BYTE, (byte) 1);
+            preview.setItemMeta(meta);
+            event.setResult(preview);
+            return;
+        }
+        if (material.getType() != Material.PAPER) {
             return;
         }
         EnlargementSource source = enlargementSource(photograph, material);
@@ -288,11 +304,12 @@ final class CameraService implements Listener, AutoCloseable {
         ItemStack preview = photograph.clone();
         preview.setAmount(1);
         ItemMeta meta = preview.getItemMeta();
-        meta.setDisplayName("§fAmpliación Instax 2×2");
-        meta.setLore(List.of("§7Entrega cuatro mapas: ↖ ↗ ↙ ↘",
-                "§7Costo: §f4 papeles",
-                "§8Colócalos juntos en cuatro marcos"));
-        meta.getPersistentDataContainer().set(enlargementPreviewKey, PersistentDataType.BYTE, (byte) 1);
+        meta.setDisplayName("§fAmpliación fotográfica " + source.gridSize() + "×" + source.gridSize());
+        meta.setLore(List.of("§7Entrega §f" + source.mapCount() + " mapas",
+                "§7Costo: §f" + source.paperCost() + " papeles",
+                "§8Fotografía continua sin marco Instax"));
+        meta.getPersistentDataContainer().set(enlargementPreviewKey,
+                PersistentDataType.INTEGER, source.gridSize());
         preview.setItemMeta(meta);
         event.setResult(preview);
     }
@@ -303,13 +320,39 @@ final class CameraService implements Listener, AutoCloseable {
             return;
         }
         ItemStack result = event.getCurrentItem();
-        if (result == null || !result.hasItemMeta()
-                || !result.getItemMeta().getPersistentDataContainer().has(
-                enlargementPreviewKey, PersistentDataType.BYTE)) {
+        if (result == null || !result.hasItemMeta()) {
+            return;
+        }
+        PersistentDataContainer data = result.getItemMeta().getPersistentDataContainer();
+        if (data.has(copyPreviewKey, PersistentDataType.BYTE)) {
+            event.setCancelled(true);
+            craftCopy(event.getInventory(), player);
+            return;
+        }
+        if (!data.has(enlargementPreviewKey, PersistentDataType.INTEGER)) {
             return;
         }
         event.setCancelled(true);
         craftEnlargement(event.getInventory(), player);
+    }
+
+    private void craftCopy(CartographyInventory cartography, Player player) {
+        ItemStack photograph = cartography.getItem(0);
+        ItemStack emptyMap = cartography.getItem(1);
+        Optional<CameraStore.PrintRecord> original = print(photograph);
+        if (original.isEmpty() || original.get().gridSize() != 1 || emptyMap == null
+                || emptyMap.getType() != Material.MAP || emptyMap.getAmount() < 1) {
+            cartography.setResult(null);
+            player.sendMessage("§eSe requiere una Instax original y un mapa vacío.");
+            return;
+        }
+        ItemStack copy = createPrintCopy(player.getWorld(), photograph, original.get());
+        cartography.setItem(1, decreased(emptyMap, 1));
+        cartography.setResult(null);
+        Map<Integer, ItemStack> remaining = player.getInventory().addItem(copy);
+        remaining.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+        player.playSound(player.getLocation(), Sound.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 0.9f, 1.0f);
+        player.sendMessage("§aInstax duplicada: ambas copias podrán ampliarse.");
     }
 
     private void craftEnlargement(CartographyInventory cartography, Player player) {
@@ -318,50 +361,64 @@ final class CameraService implements Listener, AutoCloseable {
         EnlargementSource source = enlargementSource(photograph, paper);
         if (source == null) {
             cartography.setResult(null);
-            player.sendMessage("§eSe requiere una fotografía ampliable y cuatro papeles.");
+            player.sendMessage("§eUsa exactamente 4, 9 o 16 papeles con una Instax ampliable.");
             return;
         }
-        if (emptyStorageSlots(player) < 4) {
-            player.sendMessage("§eNecesitas cuatro espacios libres en tu inventario para recibir la ampliación.");
+        if (emptyStorageSlots(player) < source.mapCount()) {
+            player.sendMessage("§eNecesitas " + source.mapCount()
+                    + " espacios libres en tu inventario para recibir la ampliación.");
             return;
         }
-        byte[] mural = store.render(source.print().photoId(), 2).orElse(null);
-        if (!MapPaletteCodec.validMural(mural)) {
+        byte[] mural = store.render(source.print().photoId(), source.gridSize()).orElse(null);
+        if (!MapPaletteCodec.validRender(mural, source.gridSize())) {
             player.sendMessage("§eEsta fotografía no contiene una versión de alta resolución.");
             return;
         }
 
-        List<ItemStack> maps = new ArrayList<>(4);
-        for (int tileY = 0; tileY < 2; tileY++) {
-            for (int tileX = 0; tileX < 2; tileX++) {
+        String title = photographTitle(photograph);
+        List<ItemStack> maps = new ArrayList<>(source.mapCount());
+        for (int tileY = 0; tileY < source.gridSize(); tileY++) {
+            for (int tileX = 0; tileX < source.gridSize(); tileX++) {
                 maps.add(createPrintTile(player.getWorld(), source.print().photoId(),
-                        muralTile(mural, tileX, tileY), tileX, tileY));
+                        muralTile(mural, source.gridSize(), tileX, tileY), source.gridSize(),
+                        tileX, tileY, title));
             }
         }
-        if (!store.deleteRender(source.print().photoId(), 2)) {
-            player.sendMessage("§eEsta fotografía ya fue ampliada.");
+        CameraStore.OriginalConsumption consumption = store.consumeOriginal(source.print().mapId());
+        if (!consumption.consumed()) {
+            player.sendMessage("§eEsta copia de la Instax ya no es válida.");
             return;
         }
         cartography.setItem(0, decreased(photograph, 1));
-        cartography.setItem(1, decreased(paper, 4));
+        cartography.setItem(1, decreased(paper, source.paperCost()));
         cartography.setResult(null);
         for (ItemStack map : maps) {
             player.getInventory().addItem(map);
         }
         player.playSound(player.getLocation(), Sound.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 0.9f, 1.1f);
-        player.sendMessage("§aFotografía ampliada: recibiste cuatro mapas para un mural 2×2.");
+        player.sendMessage("§aFotografía ampliada: recibiste " + source.mapCount()
+                + " mapas para un mural " + source.gridSize() + "×" + source.gridSize() + ".");
     }
 
     private EnlargementSource enlargementSource(ItemStack photograph, ItemStack paper) {
-        if (paper == null || paper.getType() != Material.PAPER || paper.getAmount() < 4) {
+        if (paper == null || paper.getType() != Material.PAPER) {
+            return null;
+        }
+        int gridSize = switch (paper.getAmount()) {
+            case 4 -> 2;
+            case 9 -> 3;
+            case 16 -> 4;
+            default -> 0;
+        };
+        if (gridSize == 0) {
             return null;
         }
         Optional<CameraStore.PrintRecord> print = print(photograph);
         if (print.isEmpty() || print.get().gridSize() != 1
-                || store.render(print.get().photoId(), 2).isEmpty()) {
+                || store.render(print.get().photoId(), gridSize).isEmpty()) {
             return null;
         }
-        return new EnlargementSource(print.get());
+        return new EnlargementSource(print.get(), gridSize, paper.getAmount());
     }
 
     private Optional<CameraStore.PrintRecord> print(ItemStack item) {
@@ -648,16 +705,17 @@ final class CameraService implements Listener, AutoCloseable {
         return Optional.of(new CaptureReservation(shot.photoId(), shot.camera().id(), shot.roll().id()));
     }
 
-    ItemStack createPrint(org.bukkit.World world, UUID photoId, byte[] pixels, String playerName) {
+    ItemStack createPrint(org.bukkit.World world, UUID photoId, byte[] pixels, String playerName,
+                          String caption) {
         MapView map = Bukkit.createMap(world);
         installRenderer(map, pixels);
         store.savePrint(photoId, map.getId(), pixels);
         ItemStack item = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = (MapMeta) item.getItemMeta();
         meta.setMapView(map);
-        meta.setDisplayName("§fFotografía Minemories");
+        meta.setDisplayName("§f" + itemTitle(caption));
         meta.setLore(List.of("§7Tomada por §f" + playerName,
-                "§8Renómbrala en un yunque para agregar un título"));
+                "§8Puede duplicarse o ampliarse en cartografía"));
         item.setItemMeta(meta);
         return item;
     }
@@ -666,35 +724,106 @@ final class CameraService implements Listener, AutoCloseable {
         if (!MapPaletteCodec.validMural(pixels)) {
             throw new IllegalArgumentException("La ampliación Instax no es válida");
         }
-        store.saveRender(photoId, 2, pixels);
+        store.saveRender(photoId, 4, pixels);
+        store.saveRender(photoId, 3, MapPaletteCodec.resize(pixels,
+                MapPaletteCodec.MURAL_SIZE, MapPaletteCodec.MAP_SIZE * 3));
+        store.saveRender(photoId, 2, MapPaletteCodec.resize(pixels,
+                MapPaletteCodec.MURAL_SIZE, MapPaletteCodec.MAP_SIZE * 2));
+    }
+
+    private ItemStack createPrintCopy(org.bukkit.World world, ItemStack original,
+                                      CameraStore.PrintRecord print) {
+        MapView map = Bukkit.createMap(world);
+        installRenderer(map, print.pixels());
+        store.savePrint(print.photoId(), map.getId(), print.pixels());
+        ItemStack item = original.clone();
+        item.setAmount(1);
+        MapMeta meta = (MapMeta) item.getItemMeta();
+        meta.setMapView(map);
+        meta.getPersistentDataContainer().remove(copyPreviewKey);
+        meta.getPersistentDataContainer().remove(enlargementPreviewKey);
+        item.setItemMeta(meta);
+        return item;
     }
 
     private ItemStack createPrintTile(org.bukkit.World world, UUID photoId, byte[] pixels,
-                                      int tileX, int tileY) {
+                                      int gridSize, int tileX, int tileY, String title) {
         MapView map = Bukkit.createMap(world);
         installRenderer(map, pixels);
-        store.savePrint(photoId, map.getId(), pixels, 2, tileX, tileY);
+        store.savePrint(photoId, map.getId(), pixels, gridSize, tileX, tileY);
         ItemStack item = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = (MapMeta) item.getItemMeta();
         meta.setMapView(map);
-        String[] positions = {"Superior izquierda ↖", "Superior derecha ↗",
-                "Inferior izquierda ↙", "Inferior derecha ↘"};
-        meta.setDisplayName("§fFotografía ampliada §7(" + (tileY * 2 + tileX + 1) + "/4)");
-        meta.setLore(List.of("§7" + positions[tileY * 2 + tileX],
+        int index = tileY * gridSize + tileX + 1;
+        int total = gridSize * gridSize;
+        meta.setDisplayName("§f" + title + " §7(" + index + "/" + total + ")");
+        meta.setLore(List.of("§7Fila §f" + (tileY + 1) + "§7, columna §f" + (tileX + 1),
                 "§8Puede duplicarse en una mesa de cartografía"));
         item.setItemMeta(meta);
         return item;
     }
 
-    private static byte[] muralTile(byte[] mural, int tileX, int tileY) {
+    private static byte[] muralTile(byte[] mural, int gridSize, int tileX, int tileY) {
         byte[] tile = new byte[MapPaletteCodec.PIXEL_COUNT];
+        int muralSize = MapPaletteCodec.MAP_SIZE * gridSize;
         for (int y = 0; y < MapPaletteCodec.MAP_SIZE; y++) {
-            int sourceOffset = (tileY * MapPaletteCodec.MAP_SIZE + y) * MapPaletteCodec.MURAL_SIZE
+            int sourceOffset = (tileY * MapPaletteCodec.MAP_SIZE + y) * muralSize
                     + tileX * MapPaletteCodec.MAP_SIZE;
             System.arraycopy(mural, sourceOffset, tile, y * MapPaletteCodec.MAP_SIZE,
                     MapPaletteCodec.MAP_SIZE);
         }
         return tile;
+    }
+
+    private static String photographTitle(ItemStack photograph) {
+        if (photograph != null && photograph.hasItemMeta()) {
+            ItemMeta meta = photograph.getItemMeta();
+            if (meta.hasDisplayName()) {
+                String title = cleanTitle(meta.getDisplayName());
+                if (!title.isBlank()) {
+                    return title;
+                }
+            }
+        }
+        return "Fotografía Minemories";
+    }
+
+    static String itemTitle(String caption) {
+        String title = cleanTitle(caption);
+        return title.isBlank() ? "Fotografía Minemories" : title;
+    }
+
+    private static String cleanTitle(String input) {
+        if (input == null) {
+            return "";
+        }
+        StringBuilder clean = new StringBuilder();
+        boolean formatting = false;
+        for (int offset = 0; offset < input.length();) {
+            int codePoint = input.codePointAt(offset);
+            offset += Character.charCount(codePoint);
+            if (formatting) {
+                formatting = false;
+                continue;
+            }
+            if (codePoint == '§') {
+                formatting = true;
+                continue;
+            }
+            if (Character.isWhitespace(codePoint)) {
+                if (!clean.isEmpty() && clean.charAt(clean.length() - 1) != ' ') {
+                    clean.append(' ');
+                }
+            } else if (!Character.isISOControl(codePoint)) {
+                clean.appendCodePoint(codePoint);
+            }
+        }
+        String value = clean.toString().strip();
+        int count = value.codePointCount(0, value.length());
+        if (count <= 64) {
+            return value;
+        }
+        return value.substring(0, value.offsetByCodePoints(0, 64)).stripTrailing();
     }
 
     private void restorePrints() {
@@ -875,6 +1004,11 @@ final class CameraService implements Listener, AutoCloseable {
             RollValidation validation = validateRoll(item);
             if (validation.valid()) {
                 store.destroyRoll(validation.record().id(), validation.record().revision());
+            }
+        } else {
+            Optional<CameraStore.PrintRecord> print = print(item);
+            if (print.isPresent() && print.get().gridSize() == 1) {
+                store.consumeOriginal(print.get().mapId());
             }
         }
     }
@@ -1104,6 +1238,9 @@ final class CameraService implements Listener, AutoCloseable {
         }
     }
 
-    private record EnlargementSource(CameraStore.PrintRecord print) {
+    private record EnlargementSource(CameraStore.PrintRecord print, int gridSize, int paperCost) {
+        int mapCount() {
+            return gridSize * gridSize;
+        }
     }
 }

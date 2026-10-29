@@ -61,5 +61,7 @@ class InstaxEncoderTest {
 
         assertEquals(MapPaletteCodec.MURAL_PIXEL_COUNT, pixels.length);
         assertTrue(MapPaletteCodec.validMural(pixels));
+        assertTrue(pixels[0] != pixels[MapPaletteCodec.MURAL_SIZE - 1],
+                "La fuente mural debe contener la fotografía hasta el borde, sin marco Instax");
     }
 }

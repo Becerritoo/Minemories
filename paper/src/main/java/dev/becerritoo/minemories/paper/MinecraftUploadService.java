@@ -202,7 +202,7 @@ final class MinecraftUploadService implements AutoCloseable {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     if (finalPrintPixels != null && plugin.cameras() != null) {
                         try {
-                            deliverPrint(upload.ticket, finalPrintPixels);
+                            deliverPrint(upload.ticket, finalPrintPixels, upload.caption);
                         } catch (RuntimeException exception) {
                             plugin.getLogger().warning("La fotografía se procesó, pero no se pudo crear la Instax: "
                                     + exception.getMessage());
@@ -214,7 +214,7 @@ final class MinecraftUploadService implements AutoCloseable {
         });
     }
 
-    private void deliverPrint(TicketService.PhotoTicket ticket, byte[] pixels) {
+    private void deliverPrint(TicketService.PhotoTicket ticket, byte[] pixels, String caption) {
         Player player = Bukkit.getPlayer(ticket.playerId());
         org.bukkit.World world = Bukkit.getWorld(ticket.location().world());
         if (world == null) {
@@ -222,7 +222,7 @@ final class MinecraftUploadService implements AutoCloseable {
             return;
         }
         ItemStack print = plugin.cameras().createPrint(world, ticket.reservation().photoId(),
-                pixels, ticket.playerName());
+                pixels, ticket.playerName(), caption);
         if (player != null && player.isOnline()) {
             Map<Integer, ItemStack> remaining = player.getInventory().addItem(print);
             remaining.values().forEach(item -> world.dropItemNaturally(player.getLocation(), item));

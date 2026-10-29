@@ -23,7 +23,13 @@ final class InstaxEncoder {
     }
 
     static byte[] createMural(BufferedImage source, InstaxSettings settings) {
-        return create(source, settings, 2);
+        InstaxSettings normalized = settings == null ? InstaxSettings.SHARP : settings;
+        BufferedImage photograph = cropAndResize(source,
+                MapPaletteCodec.MURAL_SIZE, MapPaletteCodec.MURAL_SIZE, normalized);
+        int[] rgb = photograph.getRGB(0, 0, MapPaletteCodec.MURAL_SIZE,
+                MapPaletteCodec.MURAL_SIZE, null, 0, MapPaletteCodec.MURAL_SIZE);
+        return MapPaletteCodec.quantize(rgb, MapPaletteCodec.MURAL_SIZE,
+                MapPaletteCodec.MURAL_SIZE, normalized.dithering());
     }
 
     private static byte[] create(BufferedImage source, InstaxSettings settings, int scale) {

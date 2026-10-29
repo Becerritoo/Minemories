@@ -69,24 +69,36 @@ class CameraStoreTest {
     }
 
     @Test
-    void storesHighResolutionSourceAndMarksItsFourMapTiles() {
+    void sharesHighResolutionSourceUntilTheLastOriginalIsConsumed() {
         try (CameraStore store = new CameraStore(temporary.toFile())) {
             var photoId = java.util.UUID.randomUUID();
-            byte[] mural = new byte[256 * 256];
+            byte[] mural = new byte[512 * 512];
             java.util.Arrays.fill(mural, (byte) 4);
             byte[] tile = new byte[128 * 128];
 
-            store.saveRender(photoId, 2, mural);
-            store.savePrint(photoId, 101, tile, 2, 1, 0);
+            store.saveRender(photoId, 4, mural);
+            store.savePrint(photoId, 100, tile);
+            store.savePrint(photoId, 101, tile);
+            store.savePrint(photoId, 102, tile, 4, 1, 0);
 
-            assertEquals(256 * 256, store.render(photoId, 2).orElseThrow().length);
-            var print = store.print(101).orElseThrow();
-            assertEquals(2, print.gridSize());
+            assertEquals(512 * 512, store.render(photoId, 4).orElseThrow().length);
+            assertEquals(2, store.originalCount(photoId));
+            var print = store.print(102).orElseThrow();
+            assertEquals(4, print.gridSize());
             assertEquals(1, print.tileX());
             assertEquals(0, print.tileY());
-            assertTrue(store.deleteRender(photoId, 2));
-            assertTrue(store.render(photoId, 2).isEmpty());
-            assertFalse(store.deleteRender(photoId, 2));
+
+            var first = store.consumeOriginal(100);
+            assertTrue(first.consumed());
+            assertEquals(1, first.remainingOriginals());
+            assertTrue(store.render(photoId, 4).isPresent());
+
+            var last = store.consumeOriginal(101);
+            assertTrue(last.consumed());
+            assertEquals(0, last.remainingOriginals());
+            assertTrue(last.sourceDeleted());
+            assertTrue(store.render(photoId, 4).isEmpty());
+            assertFalse(store.consumeOriginal(101).consumed());
         }
     }
 

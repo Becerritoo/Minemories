@@ -428,7 +428,7 @@ final class CameraStore implements AutoCloseable {
 
     synchronized void saveRender(UUID photoId, int gridSize, byte[] pixels) {
         int expected = 128 * gridSize * 128 * gridSize;
-        if (gridSize < 2 || pixels == null || pixels.length != expected) {
+        if (gridSize < 2 || gridSize > 4 || pixels == null || pixels.length != expected) {
             throw new IllegalArgumentException("La ampliación no tiene dimensiones válidas");
         }
         try (Connection connection = connect(); PreparedStatement statement = connection.prepareStatement(
@@ -470,6 +470,72 @@ final class CameraStore implements AutoCloseable {
             return statement.executeUpdate() == 1;
         } catch (SQLException exception) {
             throw failure("No se pudo consumir la ampliación", exception);
+        }
+    }
+
+    synchronized OriginalConsumption consumeOriginal(int mapId) {
+        try (Connection connection = connect()) {
+            connection.setAutoCommit(false);
+            try {
+                UUID photoId;
+                int gridSize;
+                try (PreparedStatement select = connection.prepareStatement(
+                        "SELECT photo_id,grid_size FROM prints WHERE map_id=?")) {
+                    select.setInt(1, mapId);
+                    try (ResultSet result = select.executeQuery()) {
+                        if (!result.next()) {
+                            return rollback(connection, OriginalConsumption.missing());
+                        }
+                        photoId = UUID.fromString(result.getString("photo_id"));
+                        gridSize = result.getInt("grid_size");
+                    }
+                }
+                if (gridSize != 1) {
+                    return rollback(connection, OriginalConsumption.missing());
+                }
+                try (PreparedStatement delete = connection.prepareStatement(
+                        "DELETE FROM prints WHERE map_id=? AND grid_size=1")) {
+                    delete.setInt(1, mapId);
+                    if (delete.executeUpdate() != 1) {
+                        return rollback(connection, OriginalConsumption.missing());
+                    }
+                }
+                int remaining;
+                try (PreparedStatement count = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM prints WHERE photo_id=? AND grid_size=1")) {
+                    count.setString(1, photoId.toString());
+                    try (ResultSet result = count.executeQuery()) {
+                        remaining = result.next() ? result.getInt(1) : 0;
+                    }
+                }
+                boolean sourceDeleted = false;
+                if (remaining == 0) {
+                    try (PreparedStatement delete = connection.prepareStatement(
+                            "DELETE FROM photo_renders WHERE photo_id=?")) {
+                        delete.setString(1, photoId.toString());
+                        sourceDeleted = delete.executeUpdate() > 0;
+                    }
+                }
+                connection.commit();
+                return new OriginalConsumption(true, photoId, remaining, sourceDeleted);
+            } catch (SQLException | RuntimeException exception) {
+                rollbackQuietly(connection);
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw failure("No se pudo consumir la Instax original", exception);
+        }
+    }
+
+    synchronized int originalCount(UUID photoId) {
+        try (Connection connection = connect(); PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM prints WHERE photo_id=? AND grid_size=1")) {
+            statement.setString(1, photoId.toString());
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        } catch (SQLException exception) {
+            throw failure("No se pudieron contar las Instax originales", exception);
         }
     }
 
@@ -739,6 +805,13 @@ final class CameraStore implements AutoCloseable {
         @Override
         public byte[] pixels() {
             return pixels.clone();
+        }
+    }
+
+    record OriginalConsumption(boolean consumed, UUID photoId, int remainingOriginals,
+                               boolean sourceDeleted) {
+        static OriginalConsumption missing() {
+            return new OriginalConsumption(false, null, 0, false);
         }
     }
 

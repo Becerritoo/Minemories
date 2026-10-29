@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 
 public final class Protocol {
     public static final String CHANNEL = "minemories:control";
-    public static final int VERSION = 5;
+    public static final int VERSION = 6;
     public static final int REQUEST_TICKET = 1;
     public static final int TICKET_RESPONSE = 2;
     public static final int UPLOAD_BEGIN = 3;

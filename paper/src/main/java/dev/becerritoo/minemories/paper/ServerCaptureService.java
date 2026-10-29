@@ -177,7 +177,7 @@ final class ServerCaptureService implements AutoCloseable {
                 World world = Bukkit.getWorld(worldId);
                 if (world != null) {
                     ItemStack print = cameras.createPrint(world, shot.photoId(),
-                            result.mapPixels(), playerName);
+                            result.mapPixels(), playerName, "");
                     if (player != null && player.isOnline()) {
                         Map<Integer, ItemStack> remaining = player.getInventory().addItem(print);
                         remaining.values().forEach(item -> world.dropItemNaturally(player.getLocation(), item));

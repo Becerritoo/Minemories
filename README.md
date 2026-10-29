@@ -30,7 +30,7 @@ y la revela como un mapa estilo Instax. Agacharse al soltar cancela el disparo.
 4. Al pulsar **Enviar a Discord**, la ventana se cierra y la foto entra en la cola local. En modo automático usa Paper si está disponible; de lo contrario utiliza los webhooks personales activos.
 5. Paper verifica sesión, permiso, bloqueo y, opcionalmente, AuthMe y DiscordSRV.
 6. El plugin emite un ticket aleatorio, breve y de un solo uso.
-7. El cliente divide el JPEG en fragmentos y los envía por la conexión existente de Minecraft; Paper los reensambla, valida, vuelve a codificar y publica mediante Discord. Para una cámara física, Fabric también prepara la impresión Instax de 128×128 y una fuente ampliable de 256×256 usando índices de la paleta de mapas.
+7. El cliente divide el JPEG en fragmentos y los envía por la conexión existente de Minecraft; Paper los reensambla, valida, vuelve a codificar y publica mediante Discord. Para una cámara física, Fabric también prepara la impresión Instax de 128×128 y una fuente mural limpia de 512×512 usando índices de la paleta de mapas.
 
 El engrane de la previsualización abre los ajustes avanzados sin llenar la interfaz fotográfica de controles. Desde ahí pueden agregarse hasta diez webhooks personales y elegirse cuatro modos: **Automático**, **Solo servidor**, **Solo personal** y **Servidor y personales**.
 
@@ -45,10 +45,17 @@ Las recetas de la cámara y del rollo se descubren automáticamente al entrar y
 aparecen en el libro de recetas de la mesa de crafteo. La cámara incluye además
 la palabra clave `camara` sin acento para facilitar su búsqueda.
 
-Una fotografía Fabric puede ampliarse una vez en la mesa de cartografía colocando
-la Instax y una pila de al menos cuatro papeles. El resultado consume exactamente
-cuatro papeles y entrega los cuadrantes ↖, ↗, ↙ y ↘ como mapas distintos para un
-mural 2×2. Cada cuadrante puede duplicarse de forma vanilla con un mapa vacío.
+Una fotografía Fabric puede ampliarse en la mesa de cartografía colocando la
+Instax con exactamente 4, 9 o 16 papeles. El resultado entrega 4, 9 o 16 mapas
+para un mural continuo 2×2, 3×3 o 4×4 sin el marco decorativo de la Instax. La
+Instax original sí conserva su marco y se consume al ampliar.
+
+Una Instax 1×1 se duplica colocando un mapa vacío en la mesa de cartografía. El
+plugin crea una copia registrada con un mapa distinto, por lo que ambas copias
+pueden ampliarse de manera independiente. Todas comparten una sola fuente
+512×512; esta se elimina cuando se consume o destruye la última Instax original.
+Las piezas de un mural pueden duplicarse con la mecánica vanilla, pero no pueden
+volver a ampliarse.
 
 En modo `AUTO`, los jugadores sin mod no reciben una previsualización: al soltar
 la cámara se consume la exposición, se genera la escena con los chunks ya cargados,

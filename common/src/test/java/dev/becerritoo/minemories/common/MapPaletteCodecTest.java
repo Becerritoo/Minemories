@@ -41,4 +41,21 @@ class MapPaletteCodecTest {
         assertTrue(MapPaletteCodec.valid(result));
     }
 
+    @Test
+    void derivesTwoAndThreeMapSourcesFromTheFourMapMaster() {
+        byte[] source = new byte[MapPaletteCodec.MURAL_PIXEL_COUNT];
+        Arrays.fill(source, (byte) 4);
+        source[0] = 7;
+
+        byte[] two = MapPaletteCodec.resize(source, MapPaletteCodec.MURAL_SIZE,
+                MapPaletteCodec.MAP_SIZE * 2);
+        byte[] three = MapPaletteCodec.resize(source, MapPaletteCodec.MURAL_SIZE,
+                MapPaletteCodec.MAP_SIZE * 3);
+
+        assertTrue(MapPaletteCodec.validRender(two, 2));
+        assertTrue(MapPaletteCodec.validRender(three, 3));
+        assertEquals(256 * 256, two.length);
+        assertEquals(384 * 384, three.length);
+    }
+
 }

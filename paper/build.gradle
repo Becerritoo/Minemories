@@ -1,0 +1,25 @@
+plugins {
+    id "java-library"
+}
+
+dependencies {
+    implementation project(":common")
+    compileOnly "io.papermc.paper:paper-api:${paper_api_version}"
+    testImplementation "io.papermc.paper:paper-api:${paper_api_version}"
+    testImplementation platform("org.junit:junit-bom:5.11.4")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.xerial:sqlite-jdbc:3.49.1.0"
+}
+
+processResources {
+    inputs.property("version", project.version)
+    filesMatching("plugin.yml") {
+        expand("version": project.version)
+    }
+}
+
+jar {
+    archiveFileName = "minemories-paper-${project.version}.jar"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(project(":common").sourceSets.main.output)
+}

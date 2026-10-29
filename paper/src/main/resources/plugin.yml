@@ -1,0 +1,22 @@
+name: Minemories
+version: '${version}'
+main: dev.becerritoo.minemories.paper.MinemoriesPlugin
+api-version: '1.21'
+authors: [Becerritoo]
+description: Captura y publica recuerdos de Minecraft en Discord de forma segura.
+softdepend: [DiscordSRV, AuthMe, FastLogin]
+commands:
+  minemories:
+    description: Administra Minemories.
+    usage: /minemories <status|reload|ban|unban|give>
+    permission: minemories.admin
+permissions:
+  minemories.use:
+    description: Permite publicar fotografías mediante el mod.
+    default: true
+  minemories.admin:
+    description: Permite administrar Minemories.
+    default: op
+  minemories.bypass.cooldown:
+    description: Ignora el tiempo de espera individual.
+    default: op

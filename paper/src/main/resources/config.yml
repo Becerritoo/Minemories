@@ -1,0 +1,65 @@
+# Minemories Paper 1.0
+server-name: "Mi servidor"
+
+limits:
+  # El techo de seguridad es fijo en 500K y no puede cambiarse desde la configuración.
+  # Objetivo flexible (entre 64K y 500K): las imágenes simples pueden quedar por debajo.
+  target-file-bytes: 200K
+  max-width: 1920
+  max-height: 1080
+  max-pixels: 2073600
+  jpeg-quality: 0.95
+  max-caption-characters: 200
+  ticket-lifetime-seconds: 30
+  cooldown-seconds: 10
+  global-uploads-per-minute: 20
+  max-concurrent-uploads: 2
+
+camera:
+  # La cámara se desgasta como una herramienta. Irrompibilidad puede extender su vida.
+  enabled: true
+  required-for-server: true
+  durability: 64
+  roll-slots: 3
+  roll-capacity: 12
+  # Cada lingote usado en el yunque restaura esta cantidad de disparos.
+  repair-per-gold: 8
+  # AUTO usa la captura real de Fabric cuando está disponible y el render del servidor como respaldo.
+  # CLIENT exige Fabric. SERVER siempre usa el render del plugin.
+  capture-mode: AUTO
+  server-renderer:
+    enabled: true
+    max-distance: 48
+    max-queue: 4
+    discord-upscale: 4
+    render-entities: true
+    # Sin Fabric no hay previsualización: la fotografía se publica al disparar.
+    publish-to-discord: true
+    # Entrega además una copia estilo Instax como mapa de Minecraft.
+    give-map: true
+
+privacy:
+  allow-coordinates: true
+  show-player-uuid: false
+
+discord:
+  # Alternativa cuando DiscordSRV no está instalado. Con DiscordSRV se usa su bot.
+  webhook-url: ""
+  username: "Minemories"
+  avatar-url: ""
+  embed-color: 5793266
+
+discordsrv:
+  # ID del canal donde Minemories publicará con el bot de DiscordSRV.
+  # Déjalo vacío para usar el canal principal configurado en DiscordSRV.
+  channel-id: ""
+  # Si se activa, DiscordSRV debe estar instalado y el UUID del jugador debe estar vinculado.
+  require-linked-account: false
+
+authme:
+  # Si AuthMe está instalado, no entrega tickets antes de que el jugador inicie sesión.
+  require-authenticated: true
+
+messages:
+  uploaded: "§aTu recuerdo fue publicado en Discord."
+  upload-failed: "§cNo se pudo publicar tu recuerdo: {reason}"

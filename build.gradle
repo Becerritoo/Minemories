@@ -1,0 +1,55 @@
+plugins {
+    id "java"
+    id "fabric-loom" version "1.13-SNAPSHOT" apply false
+}
+
+def minemoriesVersion = providers.gradleProperty("minemories_version").get()
+
+allprojects {
+    group = "dev.becerritoo.minemories"
+    version = minemoriesVersion
+}
+
+subprojects {
+    apply plugin: "java"
+
+    repositories {
+        mavenCentral()
+        maven { url = "https://maven.fabricmc.net/" }
+        maven { url = "https://repo.papermc.io/repository/maven-public/" }
+    }
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        withSourcesJar()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 21
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+}
+
+tasks.register("release", Copy) {
+    dependsOn(":fabric:remapJar", ":paper:jar", "resourcePack")
+    from(project(":fabric").layout.buildDirectory.dir("libs")) {
+        include("minemories-fabric-${project.version}.jar")
+    }
+    from(project(":paper").layout.buildDirectory.dir("libs")) {
+        include("minemories-paper-${project.version}.jar")
+    }
+    from(layout.buildDirectory.dir("distributions")) {
+        include("minemories-resource-pack-${project.version}.zip")
+    }
+    into(layout.buildDirectory.dir("release"))
+}
+
+tasks.register("resourcePack", Zip) {
+    from("resource-pack")
+    archiveFileName = "minemories-resource-pack-${project.version}.zip"
+    destinationDirectory = layout.buildDirectory.dir("distributions")
+}

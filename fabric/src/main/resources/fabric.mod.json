@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "minemories",
+  "version": "${version}",
+  "name": "Minemories",
+  "description": "Captura tus aventuras y comparte tus recuerdos en Discord.",
+  "authors": ["Becerritoo"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.becerritoo.minemories.fabric.MinemoriesClient"
+    ]
+  },
+  "mixins": [
+    "minemories.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

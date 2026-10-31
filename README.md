@@ -1,5 +1,9 @@
 # Minemories
 
+[![CI](https://github.com/Becerritoo/Minemories/actions/workflows/ci.yml/badge.svg)](https://github.com/Becerritoo/Minemories/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/Becerritoo/Minemories)](https://github.com/Becerritoo/Minemories/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Captura tus aventuras. Comparte tus recuerdos.**
 
 Minemories conecta una captura realizada dentro de Minecraft con uno o varios canales de Discord. En servidores compatibles usa el destino administrado por Paper sin entregar ese webhook al jugador; también permite destinos personales configurados localmente. El proyecto produce dos artefactos independientes:
@@ -7,7 +11,16 @@ Minemories conecta una captura realizada dentro de Minecraft con uno o varios ca
 - `minemories-fabric-<versión>.jar`: mod exclusivamente de cliente.
 - `minemories-paper-<versión>.jar`: plugin de servidor y autoridad de seguridad.
 
-Versión objetivo inicial: **Minecraft Java 1.21.11**, Fabric y Paper, Java 21.
+Compatibilidad actual: **Minecraft Java 1.21.11**, Fabric y Paper, Java 21.
+
+## Descargas
+
+- [Modrinth](https://modrinth.com/project/minememories): versiones separadas para Fabric y Paper.
+- [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): JAR de cliente, JAR de servidor, paquete de recursos y sumas SHA-256.
+
+Instala `minemories-fabric-<versión>.jar` en el cliente y
+`minemories-paper-<versión>.jar` en el servidor. Cada artefacto se distribuye
+por separado para evitar instalar un JAR en el entorno equivocado.
 
 ## Experiencia del jugador
 
@@ -112,6 +125,8 @@ Los webhooks personales son una función separada: sus URLs se guardan sin ocult
 ```
 
 Los dos JAR finales aparecen en `build/release/`.
+
+Para preparar un fork o enviar cambios, consulta [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Instalación
 
@@ -276,8 +291,8 @@ El webhook publica un embed con la fotografía como adjunto:
 MikeUnuu
 “Terminamos el faro después de tres días”
 
-Servidor       Jarochitoland
-Ubicación      Jarochitoland · 2801, 65, 5890
+Servidor       Mi servidor
+Ubicación      Mi servidor · 120, 64, -45
 Discord        Vinculado
 
 [fotografía]

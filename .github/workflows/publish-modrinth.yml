@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   modrinth:
+    if: github.repository == 'Becerritoo/Minemories'
     name: ${{ github.event_name == 'release' && 'Publish' || inputs.operation }} Modrinth project
     runs-on: ubuntu-latest
     env:
@@ -79,7 +80,7 @@ jobs:
           echo "operation=${operation}" >> "${GITHUB_OUTPUT}"
 
       - name: Check out release
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.release.outputs.tag }}
 
@@ -196,7 +197,7 @@ jobs:
 
       - name: Set up Java
         if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'

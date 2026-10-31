@@ -6,4 +6,16 @@ run/
 */run/
 *.iml
 .idea/
+.vscode/
+.env
+.env.*
+!.env.example
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.pem
+*.key
+local.properties
 CHECKSUMS.sha256

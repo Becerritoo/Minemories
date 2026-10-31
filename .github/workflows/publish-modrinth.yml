@@ -1,0 +1,243 @@
+name: Publish Fabric to Modrinth
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Operation to perform
+        required: true
+        type: choice
+        default: inspect
+        options:
+          - inspect
+          - publish
+      tag:
+        description: Git tag to inspect or publish
+        required: true
+        type: string
+        default: v2.0.0
+      channel:
+        description: Modrinth release channel
+        required: true
+        type: choice
+        default: release
+        options:
+          - release
+          - beta
+          - alpha
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modrinth-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  modrinth:
+    name: ${{ github.event_name == 'release' && 'Publish' || inputs.operation }} Modrinth project
+    runs-on: ubuntu-latest
+    env:
+      MODRINTH_PROJECT: minememories
+      MODRINTH_API: https://api.modrinth.com/v2
+      USER_AGENT: Becerritoo/Minemories-GitHub-Actions (https://github.com/Becerritoo/Minemories)
+
+    steps:
+      - name: Select release tag
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            tag="${RELEASE_TAG}"
+            if [[ "${IS_PRERELEASE}" == "true" ]]; then
+              channel="beta"
+            else
+              channel="release"
+            fi
+            operation="publish"
+          else
+            tag="${INPUT_TAG}"
+            channel="${INPUT_CHANNEL}"
+            operation="${{ inputs.operation }}"
+          fi
+
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: ${tag}" >&2
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${tag#v}" >> "${GITHUB_OUTPUT}"
+          echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
+          echo "operation=${operation}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Validate project version
+        env:
+          EXPECTED_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          project_version="$(sed -n 's/^minemories_version=//p' gradle.properties)"
+          if [[ "${project_version}" != "${EXPECTED_VERSION}" ]]; then
+            echo "Tag version ${EXPECTED_VERSION} does not match gradle.properties (${project_version})." >&2
+            exit 1
+          fi
+
+      - name: Inspect authenticated Modrinth project
+        id: project
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          if [[ -z "${MODRINTH_TOKEN}" ]]; then
+            echo "The MODRINTH_TOKEN repository secret is not configured." >&2
+            exit 1
+          fi
+
+          response="${RUNNER_TEMP}/modrinth-project.json"
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            "${MODRINTH_API}/project/${MODRINTH_PROJECT}" \
+            --output "${response}"
+
+          project_id="$(jq -r '.id' "${response}")"
+          if [[ -z "${project_id}" || "${project_id}" == "null" ]]; then
+            echo "Modrinth did not return a project ID." >&2
+            exit 1
+          fi
+
+          echo "id=${project_id}" >> "${GITHUB_OUTPUT}"
+          jq '{id, slug, title, status, requested_status, project_type, loaders, game_versions, environment, license, versions, source_url, issues_url}' "${response}"
+
+      - name: Check for an existing version
+        id: existing
+        if: steps.release.outputs.operation == 'publish'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ steps.project.outputs.id }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          response="${RUNNER_TEMP}/modrinth-versions.json"
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            "${MODRINTH_API}/project/${PROJECT_ID}/version" \
+            --output "${response}"
+
+          version_id="$(jq -r --arg version "${VERSION}" '.[] | select(.version_number == $version) | .id' "${response}" | head -n 1)"
+          if [[ -n "${version_id}" ]]; then
+            echo "Version ${VERSION} already exists on Modrinth as ${version_id}; skipping upload."
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+            echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Set up Java
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build and test Fabric artifact
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        run: ./gradlew :fabric:check :fabric:remapJar --no-daemon
+
+      - name: Prepare Modrinth metadata
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        env:
+          PROJECT_ID: ${{ steps.project.outputs.id }}
+          VERSION: ${{ steps.release.outputs.version }}
+          CHANNEL: ${{ steps.release.outputs.channel }}
+        run: |
+          set -euo pipefail
+
+          minecraft_version="$(sed -n 's/^minecraft_version=//p' gradle.properties)"
+          changelog_file="${RUNNER_TEMP}/modrinth-changelog.md"
+          metadata_file="${RUNNER_TEMP}/modrinth-version.json"
+
+          awk -v version="${VERSION}" '
+            $0 ~ "^## \\[" version "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > "${changelog_file}"
+
+          if [[ ! -s "${changelog_file}" ]]; then
+            echo "No changelog entry found for ${VERSION}." >&2
+            exit 1
+          fi
+
+          jq -n \
+            --arg name "Minemories ${VERSION}" \
+            --arg version "${VERSION}" \
+            --rawfile changelog "${changelog_file}" \
+            --arg project_id "${PROJECT_ID}" \
+            --arg minecraft_version "${minecraft_version}" \
+            --arg version_type "${CHANNEL}" \
+            '{
+              name: $name,
+              version_number: $version,
+              changelog: $changelog,
+              dependencies: [
+                {project_id: "P7dR8mSH", dependency_type: "required"}
+              ],
+              game_versions: [$minecraft_version],
+              version_type: $version_type,
+              loaders: ["fabric"],
+              featured: true,
+              status: "listed",
+              project_id: $project_id,
+              file_parts: ["file"],
+              primary_file: "file",
+              environment: "client_only_server_optional"
+            }' > "${metadata_file}"
+
+          jq . "${metadata_file}"
+
+      - name: Publish Fabric JAR to Modrinth
+        id: publish
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          jar="fabric/build/libs/minemories-fabric-${VERSION}.jar"
+          metadata_file="${RUNNER_TEMP}/modrinth-version.json"
+          response="${RUNNER_TEMP}/modrinth-publish-response.json"
+
+          test -f "${jar}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            --form "data=<${metadata_file};type=application/json" \
+            --form "file=@${jar};type=application/java-archive" \
+            "${MODRINTH_API}/version" \
+            --output "${response}"
+
+          version_id="$(jq -r '.id' "${response}")"
+          echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
+          echo "Published Minemories ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"

@@ -1,4 +1,4 @@
-name: Publish Fabric to Modrinth
+name: Publish Minemories to Modrinth
 
 on:
   release:
@@ -123,7 +123,7 @@ jobs:
           echo "id=${project_id}" >> "${GITHUB_OUTPUT}"
           jq '{id, slug, title, description, status, requested_status, queued, approved, project_type, categories, additional_categories, loaders, game_versions, environment, license, versions, source_url, issues_url, icon_url}' "${response}"
 
-      - name: Check for an existing version
+      - name: Check for existing loader versions
         id: existing
         if: steps.release.outputs.operation == 'publish'
         env:
@@ -141,13 +141,24 @@ jobs:
             "${MODRINTH_API}/project/${PROJECT_ID}/version" \
             --output "${response}"
 
-          version_id="$(jq -r --arg version "${VERSION}" '.[] | select(.version_number == $version) | .id' "${response}" | head -n 1)"
-          if [[ -n "${version_id}" ]]; then
-            echo "Version ${VERSION} already exists on Modrinth as ${version_id}; skipping upload."
-            echo "exists=true" >> "${GITHUB_OUTPUT}"
-            echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
+          fabric_id="$(jq -r --arg version "${VERSION}" '.[] | select(.version_number == $version and (.loaders | index("fabric"))) | .id' "${response}" | head -n 1)"
+          paper_version="${VERSION}+paper"
+          paper_id="$(jq -r --arg version "${paper_version}" '.[] | select(.version_number == $version and (.loaders | index("paper"))) | .id' "${response}" | head -n 1)"
+
+          if [[ -n "${fabric_id}" ]]; then
+            echo "Fabric ${VERSION} already exists on Modrinth as ${fabric_id}; skipping its upload."
+            echo "fabric_exists=true" >> "${GITHUB_OUTPUT}"
+            echo "fabric_id=${fabric_id}" >> "${GITHUB_OUTPUT}"
           else
-            echo "exists=false" >> "${GITHUB_OUTPUT}"
+            echo "fabric_exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+          if [[ -n "${paper_id}" ]]; then
+            echo "Paper ${paper_version} already exists on Modrinth as ${paper_id}; skipping its upload."
+            echo "paper_exists=true" >> "${GITHUB_OUTPUT}"
+            echo "paper_id=${paper_id}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "paper_exists=false" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Synchronize Modrinth project metadata
@@ -184,19 +195,19 @@ jobs:
           echo "Synchronized Modrinth project metadata."
 
       - name: Set up Java
-        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
           cache: gradle
 
-      - name: Build and test Fabric artifact
-        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
-        run: ./gradlew :fabric:check :fabric:remapJar --no-daemon
+      - name: Build and test Fabric and Paper artifacts
+        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
+        run: ./gradlew :fabric:check :paper:check :fabric:remapJar :paper:jar --no-daemon
 
       - name: Prepare Modrinth metadata
-        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
         env:
           PROJECT_ID: ${{ steps.project.outputs.id }}
           VERSION: ${{ steps.release.outputs.version }}
@@ -206,7 +217,8 @@ jobs:
 
           minecraft_version="$(sed -n 's/^minecraft_version=//p' gradle.properties)"
           changelog_file="${RUNNER_TEMP}/modrinth-changelog.md"
-          metadata_file="${RUNNER_TEMP}/modrinth-version.json"
+          fabric_metadata="${RUNNER_TEMP}/modrinth-fabric-version.json"
+          paper_metadata="${RUNNER_TEMP}/modrinth-paper-version.json"
 
           awk -v version="${VERSION}" '
             $0 ~ "^## \\[" version "\\]" { found = 1; next }
@@ -242,13 +254,37 @@ jobs:
               file_parts: ["file"],
               primary_file: "file",
               environment: "client_only_server_optional"
-            }' > "${metadata_file}"
+            }' > "${fabric_metadata}"
 
-          jq . "${metadata_file}"
+          jq -n \
+            --arg name "Minemories Paper ${VERSION}" \
+            --arg version "${VERSION}+paper" \
+            --rawfile changelog "${changelog_file}" \
+            --arg project_id "${PROJECT_ID}" \
+            --arg minecraft_version "${minecraft_version}" \
+            --arg version_type "${CHANNEL}" \
+            '{
+              name: $name,
+              version_number: $version,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: [$minecraft_version],
+              version_type: $version_type,
+              loaders: ["paper"],
+              featured: true,
+              status: "listed",
+              project_id: $project_id,
+              file_parts: ["file"],
+              primary_file: "file",
+              environment: "server_only_client_optional"
+            }' > "${paper_metadata}"
+
+          jq . "${fabric_metadata}"
+          jq . "${paper_metadata}"
 
       - name: Publish Fabric JAR to Modrinth
-        id: publish
-        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.exists != 'true'
+        id: publish_fabric
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.fabric_exists != 'true'
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           VERSION: ${{ steps.release.outputs.version }}
@@ -257,8 +293,8 @@ jobs:
           set +x
 
           jar="fabric/build/libs/minemories-fabric-${VERSION}.jar"
-          metadata_file="${RUNNER_TEMP}/modrinth-version.json"
-          response="${RUNNER_TEMP}/modrinth-publish-response.json"
+          metadata_file="${RUNNER_TEMP}/modrinth-fabric-version.json"
+          response="${RUNNER_TEMP}/modrinth-fabric-publish-response.json"
 
           test -f "${jar}"
           curl --fail-with-body --silent --show-error \
@@ -272,7 +308,35 @@ jobs:
 
           version_id="$(jq -r '.id' "${response}")"
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
-          echo "Published Minemories ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+          echo "Published Minemories Fabric ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+
+      - name: Publish Paper JAR to Modrinth
+        id: publish_paper
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.paper_exists != 'true'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          jar="paper/build/libs/minemories-paper-${VERSION}.jar"
+          metadata_file="${RUNNER_TEMP}/modrinth-paper-version.json"
+          response="${RUNNER_TEMP}/modrinth-paper-publish-response.json"
+
+          test -f "${jar}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            --form "data=<${metadata_file};type=application/json" \
+            --form "file=@${jar};type=application/java-archive" \
+            "${MODRINTH_API}/version" \
+            --output "${response}"
+
+          version_id="$(jq -r '.id' "${response}")"
+          echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
+          echo "Published Minemories Paper ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
 
       - name: Report project moderation status
         if: steps.release.outputs.operation == 'publish'

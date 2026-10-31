@@ -294,6 +294,15 @@ jobs:
           queued="$(jq -r '.queued // empty' "${project_file}")"
           if [[ "${status}" == "draft" && -z "${queued}" ]]; then
             request_file="${RUNNER_TEMP}/modrinth-review-request.json"
+            jq -n '{requested_status: "draft"}' > "${request_file}"
+            curl --fail-with-body --silent --show-error \
+              --request PATCH \
+              --header "Authorization: ${MODRINTH_TOKEN}" \
+              --header "User-Agent: ${USER_AGENT}" \
+              --header "Content-Type: application/json" \
+              --data-binary "@${request_file}" \
+              "${MODRINTH_API}/project/${PROJECT_ID}"
+
             jq -n '{requested_status: "approved"}' > "${request_file}"
             curl --fail-with-body --silent --show-error \
               --request PATCH \
@@ -311,3 +320,9 @@ jobs:
           fi
 
           jq '{status, requested_status, queued, approved}' "${project_file}"
+          status="$(jq -r '.status' "${project_file}")"
+          queued="$(jq -r '.queued // empty' "${project_file}")"
+          if [[ "${status}" == "draft" && -z "${queued}" ]]; then
+            echo "Modrinth kept the project as an unqueued draft; submit it from the project page." >&2
+            exit 1
+          fi

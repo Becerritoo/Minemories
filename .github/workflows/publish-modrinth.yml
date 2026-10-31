@@ -273,3 +273,41 @@ jobs:
           version_id="$(jq -r '.id' "${response}")"
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
           echo "Published Minemories ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+
+      - name: Submit draft project for review
+        if: steps.release.outputs.operation == 'publish'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ steps.project.outputs.id }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          project_file="${RUNNER_TEMP}/modrinth-project-after-publish.json"
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            "${MODRINTH_API}/project/${PROJECT_ID}" \
+            --output "${project_file}"
+
+          status="$(jq -r '.status' "${project_file}")"
+          queued="$(jq -r '.queued // empty' "${project_file}")"
+          if [[ "${status}" == "draft" && -z "${queued}" ]]; then
+            request_file="${RUNNER_TEMP}/modrinth-review-request.json"
+            jq -n '{requested_status: "approved"}' > "${request_file}"
+            curl --fail-with-body --silent --show-error \
+              --request PATCH \
+              --header "Authorization: ${MODRINTH_TOKEN}" \
+              --header "User-Agent: ${USER_AGENT}" \
+              --header "Content-Type: application/json" \
+              --data-binary "@${request_file}" \
+              "${MODRINTH_API}/project/${PROJECT_ID}"
+
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: ${MODRINTH_TOKEN}" \
+              --header "User-Agent: ${USER_AGENT}" \
+              "${MODRINTH_API}/project/${PROJECT_ID}" \
+              --output "${project_file}"
+          fi
+
+          jq '{status, requested_status, queued, approved}' "${project_file}"

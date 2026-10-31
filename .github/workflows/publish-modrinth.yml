@@ -17,7 +17,6 @@ on:
         description: Git tag to inspect or publish
         required: true
         type: string
-        default: v2.0.0
       channel:
         description: Modrinth release channel
         required: true
@@ -122,7 +121,7 @@ jobs:
           fi
 
           echo "id=${project_id}" >> "${GITHUB_OUTPUT}"
-          jq '{id, slug, title, status, requested_status, project_type, loaders, game_versions, environment, license, versions, source_url, issues_url}' "${response}"
+          jq '{id, slug, title, description, status, requested_status, queued, approved, project_type, categories, additional_categories, loaders, game_versions, environment, license, versions, source_url, issues_url, icon_url}' "${response}"
 
       - name: Check for an existing version
         id: existing

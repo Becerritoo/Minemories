@@ -339,6 +339,39 @@ jobs:
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
           echo "Published Minemories Paper ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
 
+      - name: Submit draft project for initial review
+        if: steps.release.outputs.operation == 'publish'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ steps.project.outputs.id }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          project_file="${RUNNER_TEMP}/modrinth-project-before-review.json"
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            "${MODRINTH_API}/project/${PROJECT_ID}" \
+            --output "${project_file}"
+
+          status="$(jq -r '.status' "${project_file}")"
+          queued="$(jq -r '.queued // empty' "${project_file}")"
+          if [[ "${status}" == "draft" && -z "${queued}" ]]; then
+            payload="${RUNNER_TEMP}/modrinth-review-request.json"
+            jq -n '{requested_status: "approved"}' > "${payload}"
+            curl --fail-with-body --silent --show-error \
+              --request PATCH \
+              --header "Authorization: ${MODRINTH_TOKEN}" \
+              --header "User-Agent: ${USER_AGENT}" \
+              --header "Content-Type: application/json" \
+              --data-binary "@${payload}" \
+              "${MODRINTH_API}/project/${PROJECT_ID}"
+            echo "Submitted the Modrinth project for initial review."
+          else
+            echo "Modrinth review submission is not required (status=${status}, queued=${queued:-none})."
+          fi
+
       - name: Report project moderation status
         if: steps.release.outputs.operation == 'publish'
         env:

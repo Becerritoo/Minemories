@@ -359,7 +359,7 @@ jobs:
           queued="$(jq -r '.queued // empty' "${project_file}")"
           if [[ "${status}" == "draft" && -z "${queued}" ]]; then
             payload="${RUNNER_TEMP}/modrinth-review-request.json"
-            jq -n '{requested_status: "approved"}' > "${payload}"
+            jq -n '{status: "processing"}' > "${payload}"
             curl --fail-with-body --silent --show-error \
               --request PATCH \
               --header "Authorization: ${MODRINTH_TOKEN}" \

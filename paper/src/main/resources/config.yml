@@ -19,6 +19,8 @@ camera:
   # La cámara se desgasta como una herramienta. Irrompibilidad puede extender su vida.
   enabled: true
   required-for-server: true
+  # Tiempo para revisar y editar una foto antes de imprimirla (60-7200 segundos).
+  capture-session-seconds: 900
   durability: 64
   roll-slots: 3
   roll-capacity: 12

@@ -2,6 +2,12 @@
 
 Este proyecto sigue [Semantic Versioning](https://semver.org/).
 
+## [2.0.1] - 2026-11-01
+
+- La sesión de captura Fabric permite ahora 15 minutos para revisar y editar una Instax.
+- El tiempo de edición puede configurarse entre 60 segundos y 2 horas con `camera.capture-session-seconds`.
+- Las sesiones pendientes se invalidan al desconectarse el jugador.
+
 ## [2.0.0] - 2026-10-29
 
 - Protocolo 6 coordinado entre Fabric y Paper.
@@ -53,5 +59,6 @@ Este proyecto sigue [Semantic Versioning](https://semver.org/).
 - Rollos de 12 exposiciones fabricados con cuatro mapas vacíos.
 - Selección de canal por ID al publicar mediante el bot de DiscordSRV.
 
+[2.0.1]: https://github.com/Becerritoo/Minemories/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Becerritoo/Minemories/releases/tag/v2.0.0
 [1.0.0]: https://github.com/Becerritoo/Minemories/releases/tag/v1.0.0

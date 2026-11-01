@@ -198,6 +198,7 @@ luminoso y una redstone.
 camera:
   enabled: true
   required-for-server: true
+  capture-session-seconds: 900 # Tiempo disponible para revisar y editar
   durability: 64
   roll-slots: 3
   roll-capacity: 12
@@ -212,6 +213,10 @@ camera:
     publish-to-discord: true
     give-map: true
 ```
+
+La sesión de captura dura 15 minutos de forma predeterminada y puede ajustarse
+entre 60 y 7200 segundos. Es de un solo uso, queda ligada al jugador y a la
+revisión exacta de la cámara, y se invalida al desconectarse.
 
 El render de Paper representa bloques, iluminación aproximada y siluetas de
 entidades; no puede reproducir shaders, paquetes de recursos ni partículas del

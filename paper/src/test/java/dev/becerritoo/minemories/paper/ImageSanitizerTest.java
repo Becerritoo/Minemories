@@ -85,7 +85,7 @@ class ImageSanitizerTest {
     private static Settings settings(int maxWidth, int maxHeight, long maxPixels, int targetBytes) {
         return new Settings("Test", 1_000_000, targetBytes,
                 maxWidth, maxHeight, maxPixels, 0.95f, 200, 30, 30, 20, 2,
-                true, true, 64, 3, 12, 8,
+                true, true, 900, 64, 3, 12, 8,
                 "AUTO", true, 48, 4, 4, true, true, true,
                 true, false, URI.create("http://localhost/webhook"), "Minemories", "", 1,
                 "", false, false, "ok", "error", null);

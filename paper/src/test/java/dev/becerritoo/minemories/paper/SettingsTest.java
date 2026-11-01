@@ -40,7 +40,19 @@ class SettingsTest {
         Settings settings = Settings.load(baseConfig());
         assertEquals(200 * 1024, settings.targetFileBytes());
         assertEquals(10, settings.cooldownSeconds());
+        assertEquals(900, settings.cameraCaptureSessionSeconds());
         assertEquals("", settings.discordSrvChannelId());
+    }
+
+    @Test
+    void boundsTheCameraEditingSession() {
+        var shortSession = baseConfig();
+        shortSession.set("camera.capture-session-seconds", 1);
+        assertEquals(60, Settings.load(shortSession).cameraCaptureSessionSeconds());
+
+        var longSession = baseConfig();
+        longSession.set("camera.capture-session-seconds", 20_000);
+        assertEquals(7_200, Settings.load(longSession).cameraCaptureSessionSeconds());
     }
 
     @Test

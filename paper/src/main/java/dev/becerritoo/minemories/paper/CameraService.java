@@ -54,7 +54,6 @@ final class CameraService implements Listener, AutoCloseable {
     private static final String KIND_ROLL = "roll";
     private static final String KIND_BROKEN_CAMERA = "broken_camera";
     private static final String KIND_BROKEN_ROLL = "broken_roll";
-    private static final long CAPTURE_LIFETIME_MILLIS = 45_000L;
     private final MinemoriesPlugin plugin;
     private final CameraStore store;
     private final ItemSecurity security;
@@ -637,7 +636,7 @@ final class CameraService implements Listener, AutoCloseable {
         purgeExpiredCaptures();
         String token = token();
         CaptureSession session = new CaptureSession(player.getUniqueId(), camera.id(), camera.revision(),
-                System.currentTimeMillis() + CAPTURE_LIFETIME_MILLIS);
+                System.currentTimeMillis() + plugin.settings().cameraCaptureSessionSeconds() * 1_000L);
         String previous = captureByPlayer.put(player.getUniqueId(), token);
         if (previous != null) {
             captures.remove(previous);
@@ -956,7 +955,9 @@ final class CameraService implements Listener, AutoCloseable {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        aiming.remove(event.getPlayer().getUniqueId());
+        UUID playerId = event.getPlayer().getUniqueId();
+        aiming.remove(playerId);
+        invalidateCapture(playerId);
     }
 
     private void migrateInventory(Player player) {
@@ -1182,6 +1183,13 @@ final class CameraService implements Listener, AutoCloseable {
             }
             return expired;
         });
+    }
+
+    private void invalidateCapture(UUID playerId) {
+        String token = captureByPlayer.remove(playerId);
+        if (token != null) {
+            captures.remove(token);
+        }
     }
 
     CameraStore.Stats stats() {

@@ -43,7 +43,8 @@ jobs:
     name: Publish or inspect Modrinth project
     runs-on: ubuntu-latest
     env:
-      MODRINTH_PROJECT: minememories
+      MODRINTH_PROJECT_ID: gNvoK4KG
+      MODRINTH_PROJECT_SLUG: minemories
       MODRINTH_API: https://api.modrinth.com/v2
       USER_AGENT: Becerritoo/Minemories-GitHub-Actions (https://github.com/Becerritoo/Minemories)
 
@@ -124,7 +125,7 @@ jobs:
           curl --fail-with-body --silent --show-error \
             --header "Authorization: ${MODRINTH_TOKEN}" \
             --header "User-Agent: ${USER_AGENT}" \
-            "${MODRINTH_API}/project/${MODRINTH_PROJECT}" \
+            "${MODRINTH_API}/project/${MODRINTH_PROJECT_ID}" \
             --output "${response}"
 
           project_id="$(jq -r '.id' "${response}")"
@@ -395,7 +396,7 @@ jobs:
 
           version_id="$(jq -r '.id' "${response}")"
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
-          echo "Published Minemories Fabric ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+          echo "Published Minemories Fabric ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT_SLUG}/version/${version_id}"
 
       - name: Publish Forge JAR to Modrinth
         if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.forge_exists != 'true'
@@ -421,7 +422,7 @@ jobs:
             --output "${response}"
 
           version_id="$(jq -r '.id' "${response}")"
-          echo "Published Minemories Forge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+          echo "Published Minemories Forge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT_SLUG}/version/${version_id}"
 
       - name: Publish NeoForge JAR to Modrinth
         if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.neoforge_exists != 'true'
@@ -447,7 +448,7 @@ jobs:
             --output "${response}"
 
           version_id="$(jq -r '.id' "${response}")"
-          echo "Published Minemories NeoForge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+          echo "Published Minemories NeoForge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT_SLUG}/version/${version_id}"
 
       - name: Publish Paper JAR to Modrinth
         id: publish_paper
@@ -475,7 +476,7 @@ jobs:
 
           version_id="$(jq -r '.id' "${response}")"
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
-          echo "Published Minemories Paper ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+          echo "Published Minemories Paper ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT_SLUG}/version/${version_id}"
 
       - name: Submit draft project for initial review
         if: steps.release.outputs.operation == 'publish'

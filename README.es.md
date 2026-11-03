@@ -19,7 +19,7 @@ Compatibilidad actual: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge y Pap
 
 ## Descargas
 
-- [Modrinth](https://modrinth.com/project/minememories): versiones separadas para Fabric, Forge, NeoForge y Paper.
+- [Modrinth](https://modrinth.com/project/minemories): versiones separadas para Fabric, Forge, NeoForge y Paper.
 - [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): todos los JAR cliente, JAR de servidor, paquete de recursos y sumas SHA-256.
 
 Instala en el cliente el JAR correspondiente a su loader y

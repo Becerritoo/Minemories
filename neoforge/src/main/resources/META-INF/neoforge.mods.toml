@@ -6,7 +6,7 @@ license="MIT"
 modId="minemories"
 version="${version}"
 displayName="Minemories"
-displayURL="https://modrinth.com/project/minememories"
+displayURL="https://modrinth.com/project/minemories"
 authors="Becerritoo"
 description='''
 Capture your Minecraft adventures as Instax memories and share them with Discord.

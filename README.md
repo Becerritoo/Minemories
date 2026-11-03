@@ -21,7 +21,7 @@ Current compatibility: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge and P
 
 ## Downloads
 
-- [Modrinth](https://modrinth.com/project/minememories): separate Fabric, Forge, NeoForge and Paper versions.
+- [Modrinth](https://modrinth.com/project/minemories): separate Fabric, Forge, NeoForge and Paper versions.
 - [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): all client JARs, the server JAR, resource pack, and SHA-256 checksums.
 
 Install the JAR matching the player's loader on the client and `minemories-paper-<version>.jar` on the server. The artifacts are distributed separately so the wrong JAR cannot accidentally be installed in the wrong environment.

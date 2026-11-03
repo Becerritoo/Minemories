@@ -1,0 +1,57 @@
+plugins {
+    id "net.minecraftforge.gradle"
+}
+
+minecraft {
+    mappings channel: "official", version: minecraft_version
+
+    runs {
+        client {
+            workingDir = file("run/client")
+        }
+    }
+}
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+}
+
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
+    annotationProcessor "net.minecraftforge:eventbus-validator:7.0.5"
+}
+
+sourceSets {
+    main {
+        java.setSrcDirs([
+                "src/main/java",
+                rootProject.file("client-common/src/main/java"),
+                rootProject.file("common/src/main/java")
+        ])
+        resources.setSrcDirs(["src/main/resources", rootProject.file("client-common/src/main/resources")])
+    }
+}
+
+processResources {
+    inputs.property("version", project.version)
+    inputs.property("minecraft_version", minecraft_version)
+    inputs.property("forge_version", forge_version)
+    from(rootProject.file("resource-pack"))
+    filesMatching("META-INF/mods.toml") {
+        expand(
+                "version": project.version,
+                "minecraft_version": minecraft_version,
+                "forge_version": forge_version
+        )
+    }
+}
+
+tasks.named("jar") {
+    archiveFileName = "minemories-forge-${project.version}.jar"
+    manifest {
+        attributes("MixinConfigs": "minemories.client.mixins.json")
+    }
+}

@@ -1,0 +1,49 @@
+plugins {
+    id "net.neoforged.moddev"
+}
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = file("run/client")
+        }
+    }
+
+    mods {
+        minemories {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java.setSrcDirs([
+                "src/main/java",
+                rootProject.file("client-common/src/main/java"),
+                rootProject.file("common/src/main/java")
+        ])
+        resources.setSrcDirs(["src/main/resources", rootProject.file("client-common/src/main/resources")])
+    }
+}
+
+processResources {
+    inputs.property("version", project.version)
+    inputs.property("minecraft_version", minecraft_version)
+    inputs.property("neoforge_version", neoforge_version)
+    from(rootProject.file("resource-pack"))
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(
+                "version": project.version,
+                "minecraft_version": minecraft_version,
+                "neoforge_version": neoforge_version
+        )
+    }
+}
+
+tasks.named("jar") {
+    archiveFileName = "minemories-neoforge-${project.version}.jar"
+}

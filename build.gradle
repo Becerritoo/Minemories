@@ -1,6 +1,8 @@
 plugins {
     id "java"
-    id "fabric-loom" version "1.13-SNAPSHOT" apply false
+    id "fabric-loom" version "1.13.6" apply false
+    id "net.minecraftforge.gradle" version "[7.0.3,8)" apply false
+    id "net.neoforged.moddev" version "2.0.148" apply false
 }
 
 def minemoriesVersion = providers.gradleProperty("minemories_version").get()
@@ -32,15 +34,25 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
     }
+
+    dependencies {
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.11.4"
+    }
 }
 
 tasks.register("release", Copy) {
-    dependsOn(":fabric:remapJar", ":paper:jar", "resourcePack")
+    dependsOn(":fabric:remapJar", ":forge:jar", ":neoforge:jar", ":paper:jar", "resourcePack")
     from(project(":fabric").layout.buildDirectory.dir("libs")) {
         include("minemories-fabric-${project.version}.jar")
     }
     from(project(":paper").layout.buildDirectory.dir("libs")) {
         include("minemories-paper-${project.version}.jar")
+    }
+    from(project(":forge").layout.buildDirectory.dir("libs")) {
+        include("minemories-forge-${project.version}.jar")
+    }
+    from(project(":neoforge").layout.buildDirectory.dir("libs")) {
+        include("minemories-neoforge-${project.version}.jar")
     }
     from(layout.buildDirectory.dir("distributions")) {
         include("minemories-resource-pack-${project.version}.zip")

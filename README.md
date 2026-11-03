@@ -10,25 +10,27 @@
 
 Minemories turns moments captured inside Minecraft into Instax-style map photos and can share them with one or more Discord channels. On compatible servers, it uses a Paper-managed destination without exposing the webhook to players. Players may also configure personal destinations locally.
 
-The project ships two separate artifacts:
+The project ships four separate JARs:
 
 - `minemories-fabric-<version>.jar`: client-side Fabric mod.
+- `minemories-forge-<version>.jar`: client-side Forge mod.
+- `minemories-neoforge-<version>.jar`: client-side NeoForge mod.
 - `minemories-paper-<version>.jar`: server-side Paper plugin and security authority.
 
-Current compatibility: **Minecraft Java 1.21.11**, Fabric and Paper, Java 21.
+Current compatibility: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge and Paper, Java 21.
 
 ## Downloads
 
-- [Modrinth](https://modrinth.com/project/minememories): separate Fabric and Paper versions.
-- [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): client JAR, server JAR, resource pack, and SHA-256 checksums.
+- [Modrinth](https://modrinth.com/project/minememories): separate Fabric, Forge, NeoForge and Paper versions.
+- [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): all client JARs, the server JAR, resource pack, and SHA-256 checksums.
 
-Install `minemories-fabric-<version>.jar` on the client and `minemories-paper-<version>.jar` on the server. The artifacts are distributed separately so the wrong JAR cannot accidentally be installed in the wrong environment.
+Install the JAR matching the player's loader on the client and `minemories-paper-<version>.jar` on the server. The artifacts are distributed separately so the wrong JAR cannot accidentally be installed in the wrong environment.
 
 ## Player experience
 
-On servers with physical cameras enabled, players craft a camera and load up to three film packs. Each pack supports 12 photos, and a camera starts with 64 durability points. Holding right click raises the camera using the vanilla spyglass pose. With Fabric, left click takes a photo without spyglass zoom or overlay. Releasing use is the fallback shutter action for unmodded and Bedrock players. Nearby players can see the flash and hear the shutter. Sneaking while releasing cancels the shot.
+On servers with physical cameras enabled, players craft a camera and load up to three film packs. Each pack supports 12 photos, and a camera starts with 64 durability points. Holding right click raises the camera using the vanilla spyglass pose. With a supported client mod, left click takes a photo without spyglass zoom or overlay. Releasing use is the fallback shutter action for unmodded and Bedrock players. Nearby players can see the flash and hear the shutter. Sneaking while releasing cancels the shot.
 
-With Fabric, Minemories captures the player's actual view. Without Fabric, Paper renders the scene and develops it as an Instax-style map.
+With any supported client mod, Minemories captures the player's actual view. Without a client mod, Paper renders the scene and develops it as an Instax-style map.
 
 1. Use a camera, or press `F2` when taking a photo for a personal destination.
 2. Minemories captures the next frame without the HUD when that option is enabled.
@@ -40,7 +42,7 @@ With Fabric, Minemories captures the player's actual view. Without Fabric, Paper
 4. Pressing **Send to Discord** closes the screen and adds the photo to the local queue. Automatic mode uses Paper when available and otherwise falls back to enabled personal webhooks.
 5. Paper verifies the session, permission, ban status, and optionally AuthMe and DiscordSRV.
 6. The plugin issues a short-lived, random, single-use upload ticket.
-7. The client splits the JPEG into chunks and sends them through the existing Minecraft connection. Paper reassembles, validates, re-encodes, and publishes the image. For physical-camera shots, Fabric also creates the 128×128 Instax print and a clean 512×512 mural source using exact Minecraft map-palette indices.
+7. The client splits the JPEG into chunks and sends them through the existing Minecraft connection. Paper reassembles, validates, re-encodes, and publishes the image. For physical-camera shots, the client mod also creates the 128×128 Instax print and a clean 512×512 mural source using exact Minecraft map-palette indices.
 
 The gear button opens advanced settings without cluttering the photo interface. Up to ten personal webhooks can be added, with four destination modes: **Automatic**, **Server only**, **Personal only**, and **Server and personal**.
 
@@ -48,13 +50,13 @@ Sneak and right click to load the film pack held in the off hand. Cameras curren
 
 Camera and film-pack recipes are discovered automatically when a player joins and appear in the crafting-table recipe book. The camera recipe also includes the Spanish search keyword `camara` without an accent.
 
-A Fabric Instax can be enlarged in a cartography table by combining it with exactly 4, 9, or 16 pieces of paper. The result is a set of 4, 9, or 16 maps for a continuous 2×2, 3×3, or 4×4 mural without the Instax border. The original Instax keeps its border and is consumed when enlarged.
+A client-rendered Instax can be enlarged in a cartography table by combining it with exactly 4, 9, or 16 pieces of paper. The result is a set of 4, 9, or 16 maps for a continuous 2×2, 3×3, or 4×4 mural without the Instax border. The original Instax keeps its border and is consumed when enlarged.
 
 Duplicate a 1×1 Instax by combining it with an empty map in a cartography table. The plugin creates an independently registered copy with a different map ID, allowing either copy to be enlarged. All originals share a single 512×512 source, which is removed after the final original Instax is enlarged or destroyed. Individual mural tiles can be duplicated with vanilla mechanics, but cannot be enlarged again.
 
 In `AUTO` mode, players without the mod do not receive a preview. Releasing the camera consumes an exposure, renders the scene from already-loaded chunks, gives the player an anvil-renamable map, and optionally posts the image to Discord without a caption. Prints keep their pixels after Paper restarts and do not depend on the original film pack.
 
-When Fabric is available, the Instax uses the real client capture. It crops the center, rescales in linear color with Lanczos to a 124×112 photo area, restores detail with moderate sharpening, and applies bidirectional dithering against the exact Minecraft map palette. This processing happens in the client queue; Paper only validates the 16,384 palette indices and registers the map. The Discord JPEG keeps its existing quality pipeline, including server-side revalidation.
+When Fabric, Forge or NeoForge is available, the Instax uses the real client capture. It crops the center, rescales in linear color with Lanczos to a 124×112 photo area, restores detail with moderate sharpening, and applies bidirectional dithering against the exact Minecraft map palette. This processing happens in the client queue; Paper only validates the 16,384 palette indices and registers the map. The Discord JPEG keeps its existing quality pipeline, including server-side revalidation.
 
 The preview can switch between the original capture and the exact Instax result. The direct **Edit Instax** button opens a live editor, also available under **Gear → Instax editing**. Choose the **Soft**, **Balanced**, or **Sharp** preset, or adjust the filter, sharpness, contrast, saturation, and dithering manually. These values are stored locally in `config/minemories.json` and do not alter the Discord JPEG.
 
@@ -172,15 +174,15 @@ camera:
 
 Capture sessions last 15 minutes by default and can be configured between 60 and 7,200 seconds. A session is single-use, bound to the player and exact camera revision, and invalidated when the player disconnects.
 
-Paper's renderer approximates blocks, lighting, and entity silhouettes. It cannot reproduce client shaders, resource packs, or particles. Scenes are processed one at a time outside the main thread, and Minemories never loads new chunks. `CLIENT` requires Fabric; `SERVER` forces Paper rendering even when the player has the mod.
+Paper's renderer approximates blocks, lighting, and entity silhouettes. It cannot reproduce client shaders, resource packs, or particles. Scenes are processed one at a time outside the main thread, and Minemories never loads new chunks. `CLIENT` requires a supported client mod; `SERVER` forces Paper rendering even when the player has the mod.
 
 The plugin stores JPEG thumbnails of approximately 24 KiB in `plugins/Minemories/cameras.db`; the original PNG remains local. Signing keys live in `plugins/Minemories/security.yml` and must be included in backups.
 
-The Fabric JAR already contains the item models. For clients without Fabric, the build also produces `minemories-resource-pack-<version>.zip`. Publish it as the server resource pack to display the custom textures.
+All client JARs already contain the item models. For clients without a mod, the build also produces `minemories-resource-pack-<version>.zip`. Publish it as the server resource pack to display the custom textures.
 
-### Fabric
+### Fabric, Forge and NeoForge
 
-Each player installs the Fabric JAR and Fabric API in their `mods/` directory. The first launch creates `config/minemories.json`. The mod and plugin must use compatible protocol versions.
+Each player installs the JAR matching their loader in the `mods/` directory. Fabric also requires Fabric API; Forge and NeoForge require no additional dependency. The first launch creates `config/minemories.json`. The mod and plugin must use compatible protocol versions.
 
 No setup is required when a server runs Minemories Paper: **Automatic** mode detects it and uses its destination. When the server has no plugin, open the gear in the preview, press **Add webhook**, paste an official Discord webhook URL, and save it. **Server and personal** publishes the same photo to both destination types; the other modes explicitly restrict delivery.
 
@@ -244,14 +246,17 @@ Coordinates and UUID display can be disabled. UUID display is off by default.
 
 ```text
 minemories/
-├── common/   Binary protocol and tests
-├── fabric/   Capture, preview, queue, and chunked transfer
-├── paper/    Authorization, reassembly, validation, and Discord
-└── docs/     Operations and security
+├── common/         Binary protocol and tests
+├── client-common/  Shared capture, UI, Instax editor, queue, and mixins
+├── fabric/         Fabric bootstrap and transport
+├── forge/          Forge bootstrap and transport
+├── neoforge/       NeoForge bootstrap and transport
+├── paper/          Authorization, reassembly, validation, and Discord
+└── docs/           Operations and security
 ```
 
 ## Versioning
 
-Paper, Fabric, `common`, and the resource pack are released together under one SemVer version. Patch releases contain compatible fixes, minor releases add compatible functionality, and major releases may change the protocol, formats, or configuration. See [VERSIONING.md](VERSIONING.md) before preparing a release.
+Paper, all three client loaders, `common`, and the resource pack are released together under one SemVer version. Patch releases contain compatible fixes, minor releases add compatible functionality, and major releases may change the protocol, formats, or configuration. See [VERSIONING.md](VERSIONING.md) before preparing a release.
 
 MIT licensed. Developed by Becerritoo.

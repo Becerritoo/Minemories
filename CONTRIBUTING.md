@@ -19,6 +19,8 @@ cd Minemories
 Los artefactos quedan en `build/release/`:
 
 - `minemories-fabric-<versión>.jar`;
+- `minemories-forge-<versión>.jar`;
+- `minemories-neoforge-<versión>.jar`;
 - `minemories-paper-<versión>.jar`;
 - `minemories-resource-pack-<versión>.zip`.
 
@@ -41,10 +43,11 @@ por Git.
 ## Módulos
 
 - `common`: protocolo y código compartido sin dependencias del loader.
-- `fabric`: captura, interfaz, codificación y transporte del cliente.
+- `client-common`: captura, interfaz, codificación, cola y mixins compartidos.
+- `fabric`, `forge` y `neoforge`: arranque y transporte específicos de cada loader.
 - `paper`: autoridad del servidor, cámaras, mapas y publicación en Discord.
-- `resource-pack`: modelos y texturas para clientes sin Fabric.
+- `resource-pack`: modelos y texturas para clientes sin mod.
 
-Los cambios incompatibles del protocolo deben coordinar Fabric y Paper. Consulta
+Los cambios incompatibles del protocolo deben coordinar todos los clientes y Paper. Consulta
 [VERSIONING.md](VERSIONING.md) y [docs/PROTOCOL.md](docs/PROTOCOL.md) antes de
 modificar paquetes de red, datos persistentes o identidades firmadas.

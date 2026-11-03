@@ -143,6 +143,10 @@ jobs:
             --output "${response}"
 
           fabric_id="$(jq -r --arg version "${VERSION}" '.[] | select(.version_number == $version and (.loaders | index("fabric"))) | .id' "${response}" | head -n 1)"
+          forge_version="${VERSION}+forge"
+          forge_id="$(jq -r --arg version "${forge_version}" '.[] | select(.version_number == $version and (.loaders | index("forge"))) | .id' "${response}" | head -n 1)"
+          neoforge_version="${VERSION}+neoforge"
+          neoforge_id="$(jq -r --arg version "${neoforge_version}" '.[] | select(.version_number == $version and (.loaders | index("neoforge"))) | .id' "${response}" | head -n 1)"
           paper_version="${VERSION}+paper"
           paper_id="$(jq -r --arg version "${paper_version}" '.[] | select(.version_number == $version and (.loaders | index("paper"))) | .id' "${response}" | head -n 1)"
 
@@ -154,12 +158,32 @@ jobs:
             echo "fabric_exists=false" >> "${GITHUB_OUTPUT}"
           fi
 
+          if [[ -n "${forge_id}" ]]; then
+            echo "Forge ${forge_version} already exists on Modrinth as ${forge_id}; skipping its upload."
+            echo "forge_exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "forge_exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+          if [[ -n "${neoforge_id}" ]]; then
+            echo "NeoForge ${neoforge_version} already exists on Modrinth as ${neoforge_id}; skipping its upload."
+            echo "neoforge_exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "neoforge_exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
           if [[ -n "${paper_id}" ]]; then
             echo "Paper ${paper_version} already exists on Modrinth as ${paper_id}; skipping its upload."
             echo "paper_exists=true" >> "${GITHUB_OUTPUT}"
             echo "paper_id=${paper_id}" >> "${GITHUB_OUTPUT}"
           else
             echo "paper_exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+          if [[ -n "${fabric_id}" && -n "${forge_id}" && -n "${neoforge_id}" && -n "${paper_id}" ]]; then
+            echo "all_exist=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "all_exist=false" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Synchronize Modrinth project metadata
@@ -196,19 +220,19 @@ jobs:
           echo "Synchronized Modrinth project metadata."
 
       - name: Set up Java
-        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.all_exist != 'true'
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: gradle
 
-      - name: Build and test Fabric and Paper artifacts
-        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
-        run: ./gradlew :fabric:check :paper:check :fabric:remapJar :paper:jar --no-daemon
+      - name: Build and test all artifacts
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.all_exist != 'true'
+        run: ./gradlew test release --no-daemon
 
       - name: Prepare Modrinth metadata
-        if: steps.release.outputs.operation == 'publish' && (steps.existing.outputs.fabric_exists != 'true' || steps.existing.outputs.paper_exists != 'true')
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.all_exist != 'true'
         env:
           PROJECT_ID: ${{ steps.project.outputs.id }}
           VERSION: ${{ steps.release.outputs.version }}
@@ -219,6 +243,8 @@ jobs:
           minecraft_version="$(sed -n 's/^minecraft_version=//p' gradle.properties)"
           changelog_file="${RUNNER_TEMP}/modrinth-changelog.md"
           fabric_metadata="${RUNNER_TEMP}/modrinth-fabric-version.json"
+          forge_metadata="${RUNNER_TEMP}/modrinth-forge-version.json"
+          neoforge_metadata="${RUNNER_TEMP}/modrinth-neoforge-version.json"
           paper_metadata="${RUNNER_TEMP}/modrinth-paper-version.json"
 
           awk -v version="${VERSION}" '
@@ -258,6 +284,52 @@ jobs:
             }' > "${fabric_metadata}"
 
           jq -n \
+            --arg name "Minemories Forge ${VERSION}" \
+            --arg version "${VERSION}+forge" \
+            --rawfile changelog "${changelog_file}" \
+            --arg project_id "${PROJECT_ID}" \
+            --arg minecraft_version "${minecraft_version}" \
+            --arg version_type "${CHANNEL}" \
+            '{
+              name: $name,
+              version_number: $version,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: [$minecraft_version],
+              version_type: $version_type,
+              loaders: ["forge"],
+              featured: true,
+              status: "listed",
+              project_id: $project_id,
+              file_parts: ["file"],
+              primary_file: "file",
+              environment: "client_only_server_optional"
+            }' > "${forge_metadata}"
+
+          jq -n \
+            --arg name "Minemories NeoForge ${VERSION}" \
+            --arg version "${VERSION}+neoforge" \
+            --rawfile changelog "${changelog_file}" \
+            --arg project_id "${PROJECT_ID}" \
+            --arg minecraft_version "${minecraft_version}" \
+            --arg version_type "${CHANNEL}" \
+            '{
+              name: $name,
+              version_number: $version,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: [$minecraft_version],
+              version_type: $version_type,
+              loaders: ["neoforge"],
+              featured: true,
+              status: "listed",
+              project_id: $project_id,
+              file_parts: ["file"],
+              primary_file: "file",
+              environment: "client_only_server_optional"
+            }' > "${neoforge_metadata}"
+
+          jq -n \
             --arg name "Minemories Paper ${VERSION}" \
             --arg version "${VERSION}+paper" \
             --rawfile changelog "${changelog_file}" \
@@ -281,6 +353,8 @@ jobs:
             }' > "${paper_metadata}"
 
           jq . "${fabric_metadata}"
+          jq . "${forge_metadata}"
+          jq . "${neoforge_metadata}"
           jq . "${paper_metadata}"
 
       - name: Publish Fabric JAR to Modrinth
@@ -310,6 +384,58 @@ jobs:
           version_id="$(jq -r '.id' "${response}")"
           echo "id=${version_id}" >> "${GITHUB_OUTPUT}"
           echo "Published Minemories Fabric ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+
+      - name: Publish Forge JAR to Modrinth
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.forge_exists != 'true'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          jar="forge/build/libs/minemories-forge-${VERSION}.jar"
+          metadata_file="${RUNNER_TEMP}/modrinth-forge-version.json"
+          response="${RUNNER_TEMP}/modrinth-forge-publish-response.json"
+
+          test -f "${jar}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            --form "data=<${metadata_file};type=application/json" \
+            --form "file=@${jar};type=application/java-archive" \
+            "${MODRINTH_API}/version" \
+            --output "${response}"
+
+          version_id="$(jq -r '.id' "${response}")"
+          echo "Published Minemories Forge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
+
+      - name: Publish NeoForge JAR to Modrinth
+        if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.neoforge_exists != 'true'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          set +x
+
+          jar="neoforge/build/libs/minemories-neoforge-${VERSION}.jar"
+          metadata_file="${RUNNER_TEMP}/modrinth-neoforge-version.json"
+          response="${RUNNER_TEMP}/modrinth-neoforge-publish-response.json"
+
+          test -f "${jar}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: ${MODRINTH_TOKEN}" \
+            --header "User-Agent: ${USER_AGENT}" \
+            --form "data=<${metadata_file};type=application/json" \
+            --form "file=@${jar};type=application/java-archive" \
+            "${MODRINTH_API}/version" \
+            --output "${response}"
+
+          version_id="$(jq -r '.id' "${response}")"
+          echo "Published Minemories NeoForge ${VERSION}: https://modrinth.com/project/${MODRINTH_PROJECT}/version/${version_id}"
 
       - name: Publish Paper JAR to Modrinth
         id: publish_paper

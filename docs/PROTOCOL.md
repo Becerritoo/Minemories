@@ -66,7 +66,7 @@ i32 muralBytes
 
 El ticket se consume en este punto. Paper comprueba jugador, permiso, bloqueo,
 cooldown, tamaño y concurrencia antes de reservar `totalBytes`. Para una cámara
-física, Fabric incluye exactamente 16 384 índices de la paleta de mapas y declara
+física, el mod cliente incluye exactamente 16 384 índices de la paleta de mapas y declara
 262 144 bytes para la fuente mural 512×512 sin marco. En los demás flujos ambos valores
 son cero. Paper valida el tamaño y cada índice antes de crear los mapas.
 

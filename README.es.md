@@ -8,19 +8,21 @@
 
 **Captura tus aventuras. Comparte tus recuerdos.**
 
-Minemories conecta una captura realizada dentro de Minecraft con uno o varios canales de Discord. En servidores compatibles usa el destino administrado por Paper sin entregar ese webhook al jugador; también permite destinos personales configurados localmente. El proyecto produce dos artefactos independientes:
+Minemories conecta una captura realizada dentro de Minecraft con uno o varios canales de Discord. En servidores compatibles usa el destino administrado por Paper sin entregar ese webhook al jugador; también permite destinos personales configurados localmente. El proyecto produce cuatro JAR independientes:
 
 - `minemories-fabric-<versión>.jar`: mod exclusivamente de cliente.
+- `minemories-forge-<versión>.jar`: mod de cliente para Forge.
+- `minemories-neoforge-<versión>.jar`: mod de cliente para NeoForge.
 - `minemories-paper-<versión>.jar`: plugin de servidor y autoridad de seguridad.
 
-Compatibilidad actual: **Minecraft Java 1.21.11**, Fabric y Paper, Java 21.
+Compatibilidad actual: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge y Paper, Java 21.
 
 ## Descargas
 
-- [Modrinth](https://modrinth.com/project/minememories): versiones separadas para Fabric y Paper.
-- [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): JAR de cliente, JAR de servidor, paquete de recursos y sumas SHA-256.
+- [Modrinth](https://modrinth.com/project/minememories): versiones separadas para Fabric, Forge, NeoForge y Paper.
+- [GitHub Releases](https://github.com/Becerritoo/Minemories/releases): todos los JAR cliente, JAR de servidor, paquete de recursos y sumas SHA-256.
 
-Instala `minemories-fabric-<versión>.jar` en el cliente y
+Instala en el cliente el JAR correspondiente a su loader y
 `minemories-paper-<versión>.jar` en el servidor. Cada artefacto se distribuye
 por separado para evitar instalar un JAR en el entorno equivocado.
 
@@ -29,10 +31,10 @@ por separado para evitar instalar un JAR en el entorno equivocado.
 En servidores con cámaras físicas activas, el jugador fabrica una cámara y carga
 hasta tres rollos. Cada rollo admite 12 fotografías y la cámara tiene 64 puntos
 de durabilidad. Mantener clic derecho levanta la cámara con la pose vanilla del
-catalejo. Con Fabric, clic izquierdo dispara sin zoom ni marco de catalejo;
+catalejo. Con un mod cliente compatible, clic izquierdo dispara sin zoom ni marco de catalejo;
 soltar el uso funciona como alternativa para clientes sin mod y Bedrock. El
-obturador y el flash son visibles para quienes estén cerca. Con Fabric abre la
-captura real del cliente; sin Fabric, Paper genera una fotografía de la escena
+obturador y el flash son visibles para quienes estén cerca. Con el mod abre la
+captura real del cliente; sin mod, Paper genera una fotografía de la escena
 y la revela como un mapa estilo Instax. Agacharse al soltar cancela el disparo.
 
 1. El jugador usa una cámara o pulsa `F2` para un destino personal.
@@ -45,7 +47,7 @@ y la revela como un mapa estilo Instax. Agacharse al soltar cancela el disparo.
 4. Al pulsar **Enviar a Discord**, la ventana se cierra y la foto entra en la cola local. En modo automático usa Paper si está disponible; de lo contrario utiliza los webhooks personales activos.
 5. Paper verifica sesión, permiso, bloqueo y, opcionalmente, AuthMe y DiscordSRV.
 6. El plugin emite un ticket aleatorio, breve y de un solo uso.
-7. El cliente divide el JPEG en fragmentos y los envía por la conexión existente de Minecraft; Paper los reensambla, valida, vuelve a codificar y publica mediante Discord. Para una cámara física, Fabric también prepara la impresión Instax de 128×128 y una fuente mural limpia de 512×512 usando índices de la paleta de mapas.
+7. El cliente divide el JPEG en fragmentos y los envía por la conexión existente de Minecraft; Paper los reensambla, valida, vuelve a codificar y publica mediante Discord. Para una cámara física, el mod cliente también prepara la impresión Instax de 128×128 y una fuente mural limpia de 512×512 usando índices de la paleta de mapas.
 
 El engrane de la previsualización abre los ajustes avanzados sin llenar la interfaz fotográfica de controles. Desde ahí pueden agregarse hasta diez webhooks personales y elegirse cuatro modos: **Automático**, **Solo servidor**, **Solo personal** y **Servidor y personales**.
 
@@ -60,7 +62,7 @@ Las recetas de la cámara y del rollo se descubren automáticamente al entrar y
 aparecen en el libro de recetas de la mesa de crafteo. La cámara incluye además
 la palabra clave `camara` sin acento para facilitar su búsqueda.
 
-Una fotografía Fabric puede ampliarse en la mesa de cartografía colocando la
+Una fotografía generada por el mod cliente puede ampliarse en la mesa de cartografía colocando la
 Instax con exactamente 4, 9 o 16 papeles. El resultado entrega 4, 9 o 16 mapas
 para un mural continuo 2×2, 3×3 o 4×4 sin el marco decorativo de la Instax. La
 Instax original sí conserva su marco y se consume al ampliar.
@@ -78,7 +80,7 @@ entrega un mapa renombrable en yunque y, si está configurado, publica la imagen
 sin pie de foto en Discord. Las impresiones conservan sus píxeles tras reiniciar
 Paper y son independientes del rollo original.
 
-Cuando Fabric está disponible, la Instax usa la captura real: recorta el centro,
+Cuando Fabric, Forge o NeoForge está disponible, la Instax usa la captura real: recorta el centro,
 reescala en color lineal con Lanczos hasta un área de 124×112, recupera detalles
 con enfoque moderado y aplica tramado bidireccional con la paleta exacta de
 mapas. Ese trabajo ocurre en la cola de procesamiento del cliente; Paper sólo
@@ -223,7 +225,7 @@ revisión exacta de la cámara, y se invalida al desconectarse.
 El render de Paper representa bloques, iluminación aproximada y siluetas de
 entidades; no puede reproducir shaders, paquetes de recursos ni partículas del
 cliente. Se procesa de uno en uno fuera del hilo principal y nunca carga chunks
-nuevos. `CLIENT` exige Fabric y `SERVER` fuerza esta representación incluso si
+nuevos. `CLIENT` exige un mod cliente compatible y `SERVER` fuerza esta representación incluso si
 el jugador tiene el mod.
 
 El plugin guarda miniaturas JPEG de aproximadamente 24 KiB en
@@ -231,17 +233,17 @@ El plugin guarda miniaturas JPEG de aproximadamente 24 KiB en
 claves de firma viven en `plugins/Minemories/security.yml` y deben incluirse en
 las copias de seguridad.
 
-El JAR Fabric ya contiene los modelos. Para clientes sin Fabric se genera además
+Todos los JAR cliente ya contienen los modelos. Para clientes sin mod se genera además
 `minemories-resource-pack-<versión>.zip`, que debe publicarse como paquete de
 recursos del servidor para mostrar las texturas personalizadas.
 
-### Fabric
+### Fabric, Forge y NeoForge
 
-Cada jugador instala el JAR Fabric y Fabric API en su carpeta `mods/`. La primera ejecución crea `config/minemories.json`. El mod y el plugin deben usar la misma versión del protocolo.
+Cada jugador instala en su carpeta `mods/` el JAR correspondiente a su loader. Fabric también requiere Fabric API; Forge y NeoForge no necesitan una dependencia adicional. La primera ejecución crea `config/minemories.json`. El mod y el plugin deben usar la misma versión del protocolo.
 
 ## Versionado
 
-Paper, Fabric, `common` y el paquete de recursos se publican juntos con una sola
+Paper, Fabric, Forge, NeoForge, `common` y el paquete de recursos se publican juntos con una sola
 versión SemVer. Un parche corrige errores compatibles; una versión menor agrega
 funciones compatibles; una versión mayor puede romper el protocolo, formatos o
 configuración. Consulta [VERSIONING.md](VERSIONING.md) antes de preparar una

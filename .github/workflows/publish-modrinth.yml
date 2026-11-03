@@ -199,39 +199,6 @@ jobs:
             echo "all_exist=false" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Synchronize Modrinth project metadata
-        if: steps.release.outputs.operation == 'publish'
-        env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          PROJECT_ID: ${{ steps.project.outputs.id }}
-        run: |
-          set -euo pipefail
-          set +x
-
-          metadata_file="${RUNNER_TEMP}/modrinth-project-metadata.json"
-          jq -n \
-            --rawfile body README.md \
-            '{
-              title: "Minemories",
-              description: "Capture Minecraft memories as Instax-style maps and share them directly to Discord.",
-              body: $body,
-              categories: ["social", "game-mechanics", "decoration"],
-              additional_categories: ["utility"],
-              license_id: "MIT",
-              source_url: "https://github.com/Becerritoo/Minemories",
-              issues_url: "https://github.com/Becerritoo/Minemories/issues"
-            }' > "${metadata_file}"
-
-          curl --fail-with-body --silent --show-error \
-            --request PATCH \
-            --header "Authorization: ${MODRINTH_TOKEN}" \
-            --header "User-Agent: ${USER_AGENT}" \
-            --header "Content-Type: application/json" \
-            --data-binary "@${metadata_file}" \
-            "${MODRINTH_API}/project/${PROJECT_ID}"
-
-          echo "Synchronized Modrinth project metadata."
-
       - name: Set up Java
         if: steps.release.outputs.operation == 'publish' && steps.existing.outputs.all_exist != 'true'
         uses: actions/setup-java@v6

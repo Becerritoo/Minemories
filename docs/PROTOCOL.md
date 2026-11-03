@@ -1,11 +1,12 @@
-# Protocolo Minemories 6
+# Minemories protocol 6
 
-Canal de plugin message: `minemories:control`.
+**English** | [Español](PROTOCOL.es.md)
 
-Todos los enteros usan orden de bytes de red. Las cadenas son `int32 length`
-seguido de UTF-8, con un máximo de 16 KiB. Ningún plugin message supera 32 KiB.
+Plugin-message channel: `minemories:control`.
 
-## Solicitud de ticket (cliente → Paper)
+All integers use network byte order. Strings are encoded as `int32 length` followed by UTF-8, with a maximum of 16 KiB. No plugin message exceeds 32 KiB.
+
+## Ticket request (client → Paper)
 
 ```text
 u8 protocolVersion = 6
@@ -13,7 +14,7 @@ u8 opcode = 1
 i64 requestId
 ```
 
-Forma extendida para una cámara física:
+Extended form for a physical camera:
 
 ```text
 u8 protocolVersion = 6
@@ -23,9 +24,9 @@ string captureToken
 bool publishToDiscord
 ```
 
-La forma corta se conserva para capturas sin cámara física.
+The short form remains available for captures that do not use a physical camera.
 
-## Respuesta de autorización (Paper → cliente)
+## Authorization response (Paper → client)
 
 ```text
 u8 protocolVersion = 6
@@ -34,7 +35,7 @@ i64 requestId
 bool accepted
 string message
 
-si accepted:
+if accepted:
   string token
   i64 expiresAtEpochMillis
   i32 maxBytes
@@ -48,7 +49,7 @@ si accepted:
   string serverName
 ```
 
-## Inicio de transferencia (cliente → Paper)
+## Transfer start (client → Paper)
 
 ```text
 u8 protocolVersion = 6
@@ -64,13 +65,9 @@ u8 instaxPixels[instaxLength]
 i32 muralBytes
 ```
 
-El ticket se consume en este punto. Paper comprueba jugador, permiso, bloqueo,
-cooldown, tamaño y concurrencia antes de reservar `totalBytes`. Para una cámara
-física, el mod cliente incluye exactamente 16 384 índices de la paleta de mapas y declara
-262 144 bytes para la fuente mural 512×512 sin marco. En los demás flujos ambos valores
-son cero. Paper valida el tamaño y cada índice antes de crear los mapas.
+The ticket is consumed at this point. Paper checks player, permission, ban, cooldown, size, and concurrency before allocating `totalBytes`. For a physical camera, the client mod includes exactly 16,384 map-palette indices and declares 262,144 bytes for the borderless 512×512 mural source. Both values are zero for other flows. Paper validates each length and palette index before creating maps.
 
-## Fragmento JPEG (cliente → Paper)
+## JPEG chunk (client → Paper)
 
 ```text
 u8 protocolVersion = 6
@@ -81,11 +78,9 @@ i32 chunkLength
 u8 data[chunkLength]
 ```
 
-Cada fragmento contiene como máximo 24 KiB y debe llegar en orden. El flujo
-concatena primero los `totalBytes` del JPEG y después `muralBytes` índices de
-paleta. La suma debe coincidir exactamente con ambos tamaños declarados.
+Every chunk contains at most 24 KiB and must arrive in order. The stream concatenates the JPEG's `totalBytes` first and the mural's `muralBytes` palette indices afterward. The sum must exactly match both declared lengths.
 
-## Resultado (Paper → cliente)
+## Result (Paper → client)
 
 ```text
 u8 protocolVersion = 6
@@ -95,7 +90,7 @@ bool success
 string message
 ```
 
-## Activación de cámara (Paper → cliente)
+## Camera activation (Paper → client)
 
 ```text
 u8 protocolVersion = 6
@@ -105,15 +100,13 @@ i32 remainingDurability
 i32 remainingExposures
 ```
 
-## Transferencia de álbum heredada (sin uso)
+## Legacy album transfer (unused)
 
 ```text
 opcode 7: i64 transferId, i32 totalBytes, i32 chunkCount
 opcode 8: i64 transferId, i32 chunkIndex, i32 chunkLength, u8 data[chunkLength]
 ```
 
-Estos opcodes se conservan por compatibilidad de protocolo, pero Paper ya no los
-emite. Las fotografías se entregan como mapas Instax y esos mapas son el álbum.
+These opcodes remain for protocol compatibility, but Paper no longer emits them. Photos are delivered as Instax maps, and those maps form the album.
 
-La transferencia no contiene UUID, nombre, mundo ni coordenadas proporcionadas
-por el mod. Paper obtiene esos datos de la sesión y del ticket ligado al jugador.
+The transfer does not contain a UUID, player name, world, or coordinates supplied by the mod. Paper obtains those values from the authenticated session and player-bound ticket.

@@ -15,7 +15,7 @@ Minemories conecta una captura realizada dentro de Minecraft con uno o varios ca
 - `minemories-neoforge-<versión>.jar`: mod de cliente para NeoForge.
 - `minemories-paper-<versión>.jar`: plugin de servidor y autoridad de seguridad.
 
-Compatibilidad actual: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge y Paper, Java 21.
+Compatibilidad actual: **Minecraft Java 26.3**, Fabric, Forge, NeoForge y Paper, Java 25.
 
 ## Descargas
 

@@ -1,6 +1,6 @@
 package dev.becerritoo.minemories.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
@@ -99,7 +99,7 @@ public final class WebhookEditorScreen extends Screen {
             existing.enabled = enabled.selected();
         }
         config.save();
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     private void test() {
@@ -128,28 +128,27 @@ public final class WebhookEditorScreen extends Screen {
         }
         MinemoriesClient.config().personalWebhooks.remove(existing);
         MinemoriesClient.config().save();
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0xd0101014);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
-        context.drawCenteredString(font, title, width / 2, 16, 0xffffff);
-        context.drawString(font, Component.literal("Nombre"), contentLeft, 42, 0xdddddd);
-        context.drawString(font, Component.literal("URL del webhook"), contentLeft, 82, 0xdddddd);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        context.centeredText(font, title, width / 2, 16, 0xffffff);
+        context.text(font, Component.literal("Nombre"), contentLeft, 42, 0xdddddd);
+        context.text(font, Component.literal("URL del webhook"), contentLeft, 82, 0xdddddd);
         String visibleStatus = font.plainSubstrByWidth(status.getString(), contentWidth);
-        context.drawString(font, Component.literal(visibleStatus), contentLeft, 148, 0xffffff);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        context.text(font, Component.literal(visibleStatus), contentLeft, 148, 0xffffff);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override

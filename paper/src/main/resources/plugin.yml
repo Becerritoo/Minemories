@@ -1,7 +1,7 @@
 name: Minemories
 version: '${version}'
 main: dev.becerritoo.minemories.paper.MinemoriesPlugin
-api-version: '1.21'
+api-version: '26.3'
 authors: [Becerritoo]
 description: Captura y publica recuerdos de Minecraft en Discord de forma segura.
 softdepend: [DiscordSRV, AuthMe, FastLogin]

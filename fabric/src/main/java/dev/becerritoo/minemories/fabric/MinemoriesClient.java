@@ -13,8 +13,8 @@ public final class MinemoriesClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         dev.becerritoo.minemories.client.MinemoriesClient.initialize(new FabricClientPlatform());
-        PayloadTypeRegistry.playC2S().register(ControlPayload.ID, ControlPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(ControlPayload.ID, ControlPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(ControlPayload.ID, ControlPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ControlPayload.ID, ControlPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(ControlPayload.ID,
                 (payload, context) -> NetworkBridge.receive(payload.data()));
         ClientTickEvents.START_CLIENT_TICK.register(CameraAimController::tick);

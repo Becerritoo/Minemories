@@ -2,8 +2,8 @@ import io.papermc.hangarpublishplugin.model.Platforms
 
 plugins {
     id "java"
-    id "fabric-loom" version "1.13.6" apply false
-    id "net.minecraftforge.gradle" version "[7.0.3,8)" apply false
+    id "net.fabricmc.fabric-loom" version "1.17.21" apply false
+    id "net.minecraftforge.gradle" version "[7.0.17,8)" apply false
     id "net.neoforged.moddev" version "2.0.148" apply false
     id "io.papermc.hangar-publish-plugin" version "0.1.4"
 }
@@ -25,13 +25,13 @@ subprojects {
     }
 
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        toolchain.languageVersion = JavaLanguageVersion.of(25)
         withSourcesJar()
     }
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
     }
 
     tasks.withType(Test).configureEach {
@@ -44,7 +44,7 @@ subprojects {
 }
 
 tasks.register("release", Copy) {
-    dependsOn(":fabric:remapJar", ":forge:jar", ":neoforge:jar", ":paper:jar", "resourcePack")
+    dependsOn(":fabric:jar", ":forge:jar", ":neoforge:jar", ":paper:jar", "resourcePack")
     from(project(":fabric").layout.buildDirectory.dir("libs")) {
         include("minemories-fabric-${project.version}.jar")
     }

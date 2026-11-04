@@ -17,7 +17,7 @@ The project ships four separate JARs:
 - `minemories-neoforge-<version>.jar`: client-side NeoForge mod.
 - `minemories-paper-<version>.jar`: server-side Paper plugin and security authority.
 
-Current compatibility: **Minecraft Java 1.21.11**, Fabric, Forge, NeoForge and Paper, Java 21.
+Current compatibility: **Minecraft Java 26.3**, Fabric, Forge, NeoForge and Paper, Java 25.
 
 ## Downloads
 

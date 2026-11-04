@@ -3,7 +3,7 @@ package dev.becerritoo.minemories.client;
 import dev.becerritoo.minemories.client.net.NetworkBridge;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -56,7 +56,7 @@ public final class DestinationSettingsScreen extends Screen {
         Button instax = addRenderableWidget(Button.builder(Component.literal("Configurar y previsualizar"),
                         button -> {
                             if (parent instanceof PreviewScreen preview) {
-                                minecraft.setScreen(new InstaxSettingsScreen(this, preview.photo()));
+                                minecraft.gui.setScreen(new InstaxSettingsScreen(this, preview.photo()));
                             }
                         })
                 .bounds(contentLeft + 150, 126, contentWidth - 150, 20).build());
@@ -80,7 +80,7 @@ public final class DestinationSettingsScreen extends Screen {
                 button.setMessage(enabledText(webhook));
             }).bounds(contentLeft + contentWidth - 132, rowY, 72, 20).build());
             addRenderableWidget(Button.builder(Component.literal("Editar"), button ->
-                    minecraft.setScreen(new WebhookEditorScreen(this, webhook)))
+                    minecraft.gui.setScreen(new WebhookEditorScreen(this, webhook)))
                     .bounds(contentLeft + contentWidth - 56, rowY, 56, 20).build());
         }
 
@@ -97,7 +97,7 @@ public final class DestinationSettingsScreen extends Screen {
         next.active = page + 1 < pageCount;
 
         Button add = addRenderableWidget(Button.builder(Component.literal("Añadir webhook"), button ->
-                minecraft.setScreen(new WebhookEditorScreen(this, null)))
+                minecraft.gui.setScreen(new WebhookEditorScreen(this, null)))
                 .bounds(contentLeft + 60, footerTop, 130, 20).build());
         add.active = config.personalWebhooks.size() < MAX_WEBHOOKS;
 
@@ -106,40 +106,39 @@ public final class DestinationSettingsScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0xd0101014);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
-        context.drawCenteredString(font, title, width / 2, 14, 0xffffff);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        context.centeredText(font, title, width / 2, 14, 0xffffff);
         String server = NetworkBridge.serverAvailable()
                 ? "§aServidor Minemories detectado"
                 : "§7Este servidor no ofrece Minemories";
-        context.drawCenteredString(font, Component.literal(server), width / 2, 30, 0xffffff);
-        context.drawString(font, Component.literal("Modo de envío"), contentLeft, 54, 0xdddddd);
-        context.drawString(font, Component.literal("Objetivo personal"), contentLeft, 80, 0xdddddd);
-        context.drawString(font, Component.literal("Espera personal"), contentLeft, 106, 0xdddddd);
-        context.drawString(font, Component.literal("Edición Instax"), contentLeft, 132, 0xdddddd);
-        context.drawString(font, Component.literal("Webhooks personales"), contentLeft, 160, 0xffffff);
+        context.centeredText(font, Component.literal(server), width / 2, 30, 0xffffff);
+        context.text(font, Component.literal("Modo de envío"), contentLeft, 54, 0xdddddd);
+        context.text(font, Component.literal("Objetivo personal"), contentLeft, 80, 0xdddddd);
+        context.text(font, Component.literal("Espera personal"), contentLeft, 106, 0xdddddd);
+        context.text(font, Component.literal("Edición Instax"), contentLeft, 132, 0xdddddd);
+        context.text(font, Component.literal("Webhooks personales"), contentLeft, 160, 0xffffff);
 
         for (VisibleWebhook visible : visibleWebhooks) {
             String name = font.plainSubstrByWidth(visible.webhook.name, Math.max(20, contentWidth - 142));
-            context.drawString(font, Component.literal(name), contentLeft + 4,
+            context.text(font, Component.literal(name), contentLeft + 4,
                     visible.y + 6, visible.webhook.enabled ? 0xffffff : 0x888888);
         }
         if (MinemoriesClient.config().personalWebhooks.isEmpty()) {
-            context.drawString(font, Component.literal("§7No has agregado destinos personales."),
+            context.text(font, Component.literal("§7No has agregado destinos personales."),
                     contentLeft + 4, 180, 0xaaaaaa);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override
     public void onClose() {
         MinemoriesClient.config().save();
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override

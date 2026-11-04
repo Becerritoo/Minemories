@@ -3,7 +3,7 @@ package dev.becerritoo.minemories.client;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.becerritoo.minemories.client.net.NetworkBridge;
 import java.nio.file.Path;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
@@ -160,8 +160,8 @@ public final class PreviewScreen extends Screen {
                     uploading = false;
                     sendButton.active = true;
                     status = Component.literal((success ? "§a" : "§c") + message);
-                    if (minecraft.player != null && minecraft.screen != PreviewScreen.this) {
-                        minecraft.player.displayClientMessage(Component.literal((success ? "§a" : "§c") + message), false);
+                    if (minecraft.player != null && minecraft.gui.screen() != PreviewScreen.this) {
+                        minecraft.player.sendSystemMessage(Component.literal((success ? "§a" : "§c") + message));
                     }
                 });
             }
@@ -171,7 +171,7 @@ public final class PreviewScreen extends Screen {
                 String queued = queuePosition == 1
                         ? "§aFotografía en cola."
                         : "§eFotografía en cola (posición " + queuePosition + ").";
-                minecraft.player.displayClientMessage(Component.literal(queued), false);
+                minecraft.player.sendSystemMessage(Component.literal(queued));
             }
             onClose();
         }
@@ -205,14 +205,14 @@ public final class PreviewScreen extends Screen {
                             uploading = false;
                             status = Component.literal((success ? "§a" : "§c") + message);
                             if (minecraft.player != null) {
-                                minecraft.player.displayClientMessage(Component.literal((success ? "§a" : "§c") + message), false);
+                                minecraft.player.sendSystemMessage(Component.literal((success ? "§a" : "§c") + message));
                             }
                         });
                     }
                 });
         if (queuePosition > 0) {
             if (minecraft.player != null) {
-                minecraft.player.displayClientMessage(Component.literal("§aInstax enviada para impresión."), false);
+                minecraft.player.sendSystemMessage(Component.literal("§aInstax enviada para impresión."));
             }
             onClose();
         } else {
@@ -263,7 +263,7 @@ public final class PreviewScreen extends Screen {
         }
         savePreferences();
         preserveForChild = true;
-        minecraft.setScreen(new DestinationSettingsScreen(this));
+        minecraft.gui.setScreen(new DestinationSettingsScreen(this));
     }
 
     private void openInstaxEditor() {
@@ -273,7 +273,7 @@ public final class PreviewScreen extends Screen {
         showInstax = true;
         savePreferences();
         preserveForChild = true;
-        minecraft.setScreen(new InstaxSettingsScreen(this, photo));
+        minecraft.gui.setScreen(new InstaxSettingsScreen(this, photo));
     }
 
     PhotoData photo() {
@@ -291,7 +291,7 @@ public final class PreviewScreen extends Screen {
         java.util.concurrent.CompletableFuture.supplyAsync(
                         () -> InstaxPreviewGenerator.generate(photo, settings))
                 .whenComplete((pixels, error) -> minecraft.execute(() -> {
-                    if (disposed || generation != instaxGeneration || minecraft.screen != this) {
+                    if (disposed || generation != instaxGeneration || minecraft.gui.screen() != this) {
                         return;
                     }
                     instaxGenerating = false;
@@ -324,7 +324,7 @@ public final class PreviewScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(panelLeft - 3, panelTop - 3,
                 panelLeft + panelWidth + 3, panelTop + panelHeight + 3, 0x66000000);
         context.fill(panelLeft, panelTop,
@@ -332,9 +332,8 @@ public final class PreviewScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
-        context.drawCenteredString(font, title, width / 2, panelTop + 8, 0xffffff);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        context.centeredText(font, title, width / 2, panelTop + 8, 0xffffff);
         int availableWidth = Math.max(1, panelWidth - PANEL_PADDING * 2);
         int availableHeight = Math.max(1, controlsTop - panelTop - 32);
         if (showInstax) {
@@ -348,7 +347,7 @@ public final class PreviewScreen extends Screen {
                         drawSize, drawSize, 128, 128, 128, 128);
             } else {
                 context.fill(x, y, x + drawSize, y + drawSize, 0xff18181c);
-                context.drawCenteredString(font,
+                context.centeredText(font,
                         Component.literal(instaxGenerating ? "Preparando Instax…" : "Vista no disponible"),
                         width / 2, y + drawSize / 2 - 4, 0xdddddd);
             }
@@ -363,12 +362,12 @@ public final class PreviewScreen extends Screen {
                     drawWidth, drawHeight, photo.width(), photo.height(), photo.width(), photo.height());
         }
         context.fill(panelLeft, controlsTop - 4, panelLeft + panelWidth, panelTop + panelHeight, 0xf01b1b22);
-        context.drawString(font, Component.literal("Pie de foto"),
+        context.text(font, Component.literal("Pie de foto"),
                 panelLeft + PANEL_PADDING, controlsTop + 5, 0xdddddd);
         String visibleStatus = font.plainSubstrByWidth(status.getString(), panelWidth - PANEL_PADDING * 2);
-        context.drawString(font, Component.literal(visibleStatus),
+        context.text(font, Component.literal(visibleStatus),
                 panelLeft + PANEL_PADDING, panelTop + panelHeight - 12, 0xffffff);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override

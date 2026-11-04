@@ -8,7 +8,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -100,16 +100,15 @@ public final class AlbumScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(panelLeft - 3, panelTop - 3,
                 panelLeft + panelWidth + 3, panelTop + panelHeight + 3, 0x66000000);
         context.fill(panelLeft, panelTop, panelLeft + panelWidth, panelTop + panelHeight, 0xee101014);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
-        context.drawCenteredString(font, title, width / 2, panelTop + 8, 0xffffff);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        context.centeredText(font, title, width / 2, panelTop + 8, 0xffffff);
         if (textureRegistered && image != null) {
             int availableWidth = panelWidth - 24;
             int availableHeight = panelHeight - 92;
@@ -122,26 +121,26 @@ public final class AlbumScreen extends Screen {
             context.blit(RenderPipelines.GUI_TEXTURED, PHOTO_ID, x, y, 0, 0,
                     drawWidth, drawHeight, image.getWidth(), image.getHeight(), image.getWidth(), image.getHeight());
         } else if (error != null) {
-            context.drawCenteredString(font, error, width / 2, panelTop + 80, 0xff7777);
+            context.centeredText(font, error, width / 2, panelTop + 80, 0xff7777);
         }
         if (!photos.isEmpty()) {
             Entry entry = photos.get(index);
             AlbumArchive.Photo photo = entry.photo();
             String caption = photo.caption().isBlank() ? "Sin pie de foto" : photo.caption();
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.literal(font.plainSubstrByWidth(caption, panelWidth - 24)),
                     width / 2, panelTop + panelHeight - 58, 0xffffff);
             String detail = "Rollo " + entry.rollNumber() + " · foto " + photo.slot() + "/"
                     + entry.roll().capacity() + " · " + photo.playerName() + " · "
                     + DATE.format(Instant.ofEpochMilli(photo.createdAtEpochMillis()));
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.literal(font.plainSubstrByWidth(detail, panelWidth - 24)),
                     width / 2, panelTop + panelHeight - 44, 0xaaaaaa);
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.literal((index + 1) + " de " + photos.size()),
                     width / 2, panelTop + 8, 0xdddddd);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override

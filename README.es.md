@@ -12,7 +12,7 @@ Minemories agrega cámaras crafteables, rollos, fotografías coleccionables esti
 
 Paper funciona por sí solo mediante un renderizador de escenas del servidor. Los mods opcionales para Fabric, Forge y NeoForge capturan la vista real del jugador y agregan previsualización, pie de foto, copia local y editor Instax.
 
-Compatibilidad actual: **Minecraft Java 1.21.11**, Paper, Fabric, Forge, NeoForge y Java 21.
+Compatibilidad actual: **Minecraft Java 26.3**, Paper, Fabric, Forge, NeoForge y Java 25.
 
 ## Características principales
 

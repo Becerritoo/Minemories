@@ -43,7 +43,7 @@ final class AlbumReceiver {
                 AlbumArchive.Album album = AlbumArchive.decode(transfer.data);
                 transfer = null;
                 Minecraft client = Minecraft.getInstance();
-                client.setScreen(new AlbumScreen(album));
+                client.gui.setScreen(new AlbumScreen(album));
             }
         } catch (Protocol.ProtocolException | IOException | RuntimeException exception) {
             transfer = null;
@@ -54,7 +54,7 @@ final class AlbumReceiver {
     private static void notifyFailure(String message) {
         Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
-            client.player.displayClientMessage(Component.literal("§c" + message), false);
+            client.player.sendSystemMessage(Component.literal("§c" + message));
         }
     }
 

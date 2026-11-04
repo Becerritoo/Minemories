@@ -231,8 +231,8 @@ public final class NetworkBridge {
             Protocol.CameraTrigger trigger = Protocol.decodeCameraTrigger(data);
             Minecraft client = Minecraft.getInstance();
             if (!CaptureManager.start(client, trigger.captureToken()) && client.player != null) {
-                client.player.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                        "§eCierra la pantalla actual para usar la cámara."), false);
+                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "§eCierra la pantalla actual para usar la cámara."));
             }
         } catch (Protocol.ProtocolException ignored) {
         }

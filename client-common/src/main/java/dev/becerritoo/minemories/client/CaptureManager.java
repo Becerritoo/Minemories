@@ -23,7 +23,7 @@ public final class CaptureManager {
     }
 
     public static boolean start(Minecraft client, String cameraCaptureToken) {
-        if (client.player == null || client.level == null || client.screen != null) {
+        if (client.player == null || client.level == null || client.gui.screen() != null) {
             return false;
         }
         if (!CAPTURING.compareAndSet(false, true)) {
@@ -31,8 +31,10 @@ public final class CaptureManager {
         }
         captureToken = cameraCaptureToken == null ? "" : cameraCaptureToken;
         if (MinemoriesClient.config().cleanHud) {
-            previousHudHidden = client.options.hideGui;
-            client.options.hideGui = true;
+            previousHudHidden = client.gui.hud.isHidden();
+            if (!previousHudHidden) {
+                client.gui.hud.toggle();
+            }
             waitingForCleanFrame = true;
         } else {
             captureFramebuffer(client);
@@ -45,13 +47,15 @@ public final class CaptureManager {
             return;
         }
         waitingForCleanFrame = false;
-        client.options.hideGui = previousHudHidden;
+        if (client.gui.hud.isHidden() != previousHudHidden) {
+            client.gui.hud.toggle();
+        }
         captureFramebuffer(client);
     }
 
     private static void captureFramebuffer(Minecraft client) {
         try {
-            Screenshot.takeScreenshot(client.getMainRenderTarget(), image -> onImage(client, image));
+            Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(), image -> onImage(client, image));
         } catch (RuntimeException exception) {
             CAPTURING.set(false);
             captureToken = "";
@@ -75,7 +79,7 @@ public final class CaptureManager {
                     image.close();
                     return;
                 }
-                client.setScreen(new PreviewScreen(photo, image));
+                client.gui.setScreen(new PreviewScreen(photo, image));
             });
         } catch (IOException exception) {
             image.close();
@@ -95,7 +99,7 @@ public final class CaptureManager {
     private static void notifyFailure(Minecraft client, String reason) {
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(Component.literal("§cMinemories no pudo capturar la imagen: " + reason), false);
+                client.player.sendSystemMessage(Component.literal("§cMinemories no pudo capturar la imagen: " + reason));
             }
         });
     }

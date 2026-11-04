@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleConsumer;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -145,7 +145,7 @@ public final class InstaxSettingsScreen extends Screen {
     }
 
     private void installPreview(long generation, byte[] pixels) {
-        if (generation != previewGeneration || minecraft.screen != this) {
+        if (generation != previewGeneration || minecraft.gui.screen() != this) {
             return;
         }
         destroyTexture();
@@ -157,15 +157,14 @@ public final class InstaxSettingsScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0xd0101014);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(context, mouseX, mouseY, deltaTicks);
-        context.drawCenteredString(font, title, width / 2, 14, 0xffffff);
-        context.drawCenteredString(font, Component.literal("Resultado del mapa"),
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        context.centeredText(font, title, width / 2, 14, 0xffffff);
+        context.centeredText(font, Component.literal("Resultado del mapa"),
                 contentLeft + previewArea / 2, 32, 0xdddddd);
         int available = Math.min(previewArea, Math.max(128, height - 88));
         int scale = Math.max(1, available / 128);
@@ -179,18 +178,18 @@ public final class InstaxSettingsScreen extends Screen {
         } else {
             context.fill(drawX, drawY, drawX + drawSize, drawY + drawSize, 0xff18181c);
         }
-        context.drawCenteredString(font, previewStatus,
+        context.centeredText(font, previewStatus,
                 contentLeft + previewArea / 2, Math.min(height - 36, drawY + drawSize + 8), 0xffffff);
-        context.drawCenteredString(font,
+        context.centeredText(font,
                 Component.literal("Los ajustes sólo afectan la Instax; Discord no cambia."),
                 width / 2, height - 14, 0xaaaaaa);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override
     public void onClose() {
         MinemoriesClient.config().save();
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     @Override

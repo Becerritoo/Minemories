@@ -2,6 +2,16 @@
 
 Este proyecto sigue [Semantic Versioning](https://semver.org/).
 
+## [2.2.0-beta.1] - 2026-11-04
+
+- Compatibilidad inicial con Minecraft Java 26.3 en Paper, Fabric, Forge y NeoForge.
+- Actualización a Java 25, Gradle 9.6, Fabric Loom 1.17, Forge 66.1.5 y NeoForge 26.3.0.101.
+- Migración del cliente al nuevo sistema de extracción de interfaces, pantallas y HUD de Minecraft 26.3.
+- Adaptación de la captura al framebuffer administrado por `GameRenderer` y del overlay del catalejo al nuevo `Hud`.
+- Migración del registro de payloads Fabric a las direcciones `serverbound` y `clientbound`.
+- Paquete de recursos actualizado al formato 97.1.
+- El protocolo Minemories 6 y los datos persistentes del plugin permanecen sin cambios.
+
 ## [2.1.0] - 2026-11-03
 
 - Nuevos clientes para Forge 61.2.4 y NeoForge 21.11.48 en Minecraft 1.21.11.
@@ -90,6 +100,7 @@ Este proyecto sigue [Semantic Versioning](https://semver.org/).
 - Selección de canal por ID al publicar mediante el bot de DiscordSRV.
 
 [2.1.0]: https://github.com/Becerritoo/Minemories/releases/tag/v2.1.0
+[2.2.0-beta.1]: https://github.com/Becerritoo/Minemories/compare/v2.1.0...v2.2.0-beta.1
 [2.0.1]: https://github.com/Becerritoo/Minemories/releases/tag/v2.0.1
 [2.1.0-beta.2]: https://github.com/Becerritoo/Minemories/compare/v2.1.0-beta.1...v2.1.0-beta.2
 [2.1.0-beta.1]: https://github.com/Becerritoo/Minemories/compare/v2.0.1...v2.1.0-beta.1

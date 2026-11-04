@@ -2,12 +2,12 @@ plugins {
     id "net.minecraftforge.gradle"
 }
 
-minecraft {
-    mappings channel: "official", version: minecraft_version
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+minecraft {
     runs {
-        client {
-            workingDir = file("run/client")
+        register("client") {
+            workingDir = layout.projectDirectory.dir("run/client")
         }
     }
 }
@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
-    annotationProcessor "net.minecraftforge:eventbus-validator:7.0.5"
+    annotationProcessor "net.minecraftforge:eventbus-validator:7.0.6"
 }
 
 sourceSets {

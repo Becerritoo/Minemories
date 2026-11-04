@@ -12,7 +12,7 @@ Minemories adds craftable cameras, film packs, collectible Instax-style map phot
 
 Paper works on its own with a server-side scene renderer. The optional Fabric, Forge, and NeoForge client mods capture the player's actual view and add previews, captions, local copies, and the Instax editor.
 
-Current compatibility: **Minecraft Java 1.21.11**, Paper, Fabric, Forge, NeoForge, and Java 21.
+Current compatibility: **Minecraft Java 26.3**, Paper, Fabric, Forge, NeoForge, and Java 25.
 
 ## Highlights
 

@@ -1,7 +1,6 @@
 package dev.becerritoo.minemories.client.mixin;
 
 import dev.becerritoo.minemories.client.CaptureManager;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -18,7 +17,7 @@ abstract class GameRendererMixin {
     private Minecraft minecraft;
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void minemories$captureCleanFrame(DeltaTracker tickCounter, boolean tick, CallbackInfo callback) {
+    private void minemories$captureCleanFrame(CallbackInfo callback) {
         CaptureManager.afterFrameRendered(minecraft);
     }
 }

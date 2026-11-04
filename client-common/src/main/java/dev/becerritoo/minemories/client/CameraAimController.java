@@ -19,7 +19,7 @@ public final class CameraAimController {
             shutterSent = false;
             return;
         }
-        if (client.screen != null) {
+        if (client.gui.screen() != null) {
             return;
         }
 
